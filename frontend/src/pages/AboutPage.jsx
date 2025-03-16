@@ -1,36 +1,78 @@
+/**
+ * 关于页面组件
+ * 
+ * 这个组件实现了应用的关于页面，包括：
+ * 1. 隐私保护技术的详细说明
+ * 2. 常见问题解答（FAQ）
+ * 3. 技术实现细节
+ * 4. 导航按钮
+ * 
+ * 页面设计注重教育用户了解PSI协议和隐私保护机制
+ */
+
+// 导入Ant Design组件
 import { Typography, Card, Collapse, Button, Space } from 'antd';
+// 导入路由链接组件
 import { Link } from 'react-router-dom';
+// 导入Ant Design图标
 import { LockOutlined, QuestionCircleOutlined, ScanOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+// 导入样式组件库
 import styled from 'styled-components';
+// 导入隐私保护解释器组件
 import PrivacyExplainer from '../components/PrivacyExplainer';
 
+// 从Typography组件中解构出需要的子组件
 const { Title, Paragraph, Text } = Typography;
+// 从Collapse组件中解构出Panel子组件
 const { Panel } = Collapse;
 
+/**
+ * 关于页面容器样式
+ * 
+ * 设置最大宽度和水平居中
+ * 限制内容宽度，提高可读性
+ */
 const AboutContainer = styled.div`
   max-width: 900px;
   margin: 0 auto;
 `;
 
+/**
+ * 章节卡片样式
+ * 
+ * 设置底部外边距
+ * 用于分隔不同的内容章节
+ */
 const SectionCard = styled(Card)`
   margin-bottom: 30px;
 `;
 
+/**
+ * 关于页面组件
+ * 
+ * 提供应用的详细信息、隐私保护机制的解释和常见问题解答
+ * 
+ * @returns {JSX.Element} 关于页面组件
+ */
 const AboutPage = () => {
   return (
     <AboutContainer>
+      {/* 页面标题和简介 */}
       <Title level={2}>关于我们的隐私保护恶意软件检测</Title>
       <Paragraph>
         我们的系统旨在保护您的隐私，同时有效检测恶意文件。
         我们使用先进的加密技术，确保只有关于恶意文件的信息才会被我们的服务器获知。
       </Paragraph>
 
+      {/* 隐私保护技术章节 */}
       <SectionCard title={<><LockOutlined /> 隐私保护技术</>}>
         <PrivacyExplainer />
       </SectionCard>
 
+      {/* 常见问题章节 */}
       <SectionCard title={<><QuestionCircleOutlined /> 常见问题</>}>
         <Collapse defaultActiveKey={['1']}>
+          {/* 问题1：隐私保护工作原理 */}
           <Panel header="隐私保护是如何工作的？" key="1">
             <Paragraph>
               我们使用一种称为隐私保护集合交集（PSI）的加密协议，它允许双方（您和我们的服务器）
@@ -44,6 +86,7 @@ const AboutPage = () => {
             </ul>
           </Panel>
           
+          {/* 问题2：数据传输安全性 */}
           <Panel header="我的数据会发送到您的服务器吗？" key="2">
             <Paragraph>
               当您启用隐私模式（默认设置）使用我们的服务时，只有经过加密保护的信息才会发送到我们的服务器。
@@ -54,6 +97,7 @@ const AboutPage = () => {
             </Paragraph>
           </Panel>
           
+          {/* 问题3：检测准确性 */}
           <Panel header="恶意软件检测的准确性如何？" key="3">
             <Paragraph>
               我们的系统使用定期更新的已知恶意软件签名的综合数据库。
@@ -64,6 +108,7 @@ const AboutPage = () => {
             </Paragraph>
           </Panel>
           
+          {/* 问题4：支持的文件类型 */}
           <Panel header="我可以扫描哪些类型的文件？" key="4">
             <Paragraph>
               您可以扫描任何类型的文件。我们的系统计算文件的加密哈希值，
@@ -73,6 +118,7 @@ const AboutPage = () => {
         </Collapse>
       </SectionCard>
 
+      {/* 技术细节章节 */}
       <SectionCard title={<><SafetyCertificateOutlined /> 技术细节</>}>
         <Paragraph>
           对于那些对技术实现感兴趣的人，我们的系统使用：
@@ -89,6 +135,7 @@ const AboutPage = () => {
         </Paragraph>
       </SectionCard>
 
+      {/* 导航按钮区域 */}
       <div style={{ textAlign: 'center', margin: '40px 0' }}>
         <Space size="large">
           <Button type="primary" size="large" icon={<ScanOutlined />}>

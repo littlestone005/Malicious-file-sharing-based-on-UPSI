@@ -1,5 +1,21 @@
+/**
+ * 隐私设置组件
+ * 
+ * 这个组件提供用户隐私偏好的配置界面，包括：
+ * 1. PSI协议启用/禁用
+ * 2. 本地哈希计算设置
+ * 3. 隐私保护级别调整
+ * 4. 元数据匿名化选项
+ * 5. 数据保留策略选择
+ * 6. 匿名统计数据分享设置
+ * 
+ * 组件使用各种表单控件（开关、滑块、单选按钮）让用户可视化地配置隐私选项
+ */
+
 import React, { useState } from 'react';
+// 导入样式组件库
 import styled from 'styled-components';
+// 导入Ant Design组件
 import { 
   Card, 
   Switch, 
@@ -13,6 +29,7 @@ import {
   Space,
   Collapse
 } from 'antd';
+// 导入Ant Design图标
 import { 
   LockOutlined, 
   InfoCircleOutlined, 
@@ -22,21 +39,41 @@ import {
   QuestionCircleOutlined
 } from '@ant-design/icons';
 
+// 从Typography组件中解构出需要的子组件
 const { Title, Text, Paragraph } = Typography;
+// 从Collapse组件中解构出Panel子组件
 const { Panel } = Collapse;
 
+/**
+ * 设置卡片样式
+ * 
+ * 设置底部外边距、圆角和阴影效果
+ * 增强卡片的视觉层次感
+ */
 const SettingsCard = styled(Card)`
   margin-bottom: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 `;
 
+/**
+ * 设置项容器样式
+ * 
+ * 设置底部外边距和垂直布局
+ * 用于包含单个设置项的所有元素
+ */
 const SettingItem = styled.div`
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
 `;
 
+/**
+ * 设置项头部样式
+ * 
+ * 使用flex布局使标题和控件分别位于左右两侧
+ * 设置底部外边距
+ */
 const SettingHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -44,6 +81,12 @@ const SettingHeader = styled.div`
   margin-bottom: 8px;
 `;
 
+/**
+ * 设置项标题样式
+ * 
+ * 设置字体粗细、大小和flex布局
+ * 用于显示设置项的名称
+ */
 const SettingTitle = styled(Text)`
   font-weight: 500;
   font-size: 16px;
@@ -51,20 +94,44 @@ const SettingTitle = styled(Text)`
   align-items: center;
 `;
 
+/**
+ * 设置项图标样式
+ * 
+ * 设置右侧外边距和颜色
+ * 用于在设置项标题前显示图标
+ */
 const SettingIcon = styled.span`
   margin-right: 8px;
   color: var(--color-primary);
 `;
 
+/**
+ * 设置项描述样式
+ * 
+ * 设置底部外边距和颜色
+ * 用于显示设置项的详细说明
+ */
 const SettingDescription = styled(Paragraph)`
   margin-bottom: 12px;
   color: rgba(0, 0, 0, 0.65);
 `;
 
+/**
+ * 滑块包装器样式
+ * 
+ * 设置水平内边距
+ * 用于包裹滑块控件
+ */
 const SliderWrapper = styled.div`
   padding: 0 10px;
 `;
 
+/**
+ * 信息框样式
+ * 
+ * 设置背景色、圆角、内边距和上边距
+ * 用于显示当前设置的详细信息
+ */
 const InfoBox = styled.div`
   background-color: rgba(24, 144, 255, 0.1);
   border-radius: 4px;
@@ -72,18 +139,36 @@ const InfoBox = styled.div`
   margin-top: 8px;
 `;
 
+/**
+ * 隐私设置组件
+ * 
+ * 提供用户配置隐私相关选项的界面
+ * 
+ * @returns {JSX.Element} 隐私设置组件
+ */
 const PrivacySettings = () => {
-  // 状态管理
+  /**
+   * 隐私设置状态
+   * 
+   * 包含所有隐私相关选项的当前值
+   */
   const [settings, setSettings] = useState({
-    enablePSI: true,
-    localHashingOnly: true,
-    anonymizeMetadata: true,
-    privacyLevel: 3, // 1-5
-    dataRetention: 'none', // 'none', 'session', '30days'
-    shareStatistics: false,
+    enablePSI: true,              // 是否启用PSI协议
+    localHashingOnly: true,       // 是否仅在本地计算哈希值
+    anonymizeMetadata: true,      // 是否匿名化文件元数据
+    privacyLevel: 3,              // 隐私保护级别（1-5）
+    dataRetention: 'none',        // 数据保留策略（'none', 'session', '30days'）
+    shareStatistics: false,       // 是否分享匿名统计数据
   });
   
-  // 处理开关变化
+  /**
+   * 处理开关控件变化
+   * 
+   * 返回一个函数，用于更新指定设置项的值
+   * 
+   * @param {string} name - 设置项名称
+   * @returns {Function} 处理开关变化的函数
+   */
   const handleSwitchChange = (name) => (checked) => {
     setSettings({
       ...settings,
@@ -91,7 +176,14 @@ const PrivacySettings = () => {
     });
   };
   
-  // 处理滑块变化
+  /**
+   * 处理滑块控件变化
+   * 
+   * 返回一个函数，用于更新指定设置项的值
+   * 
+   * @param {string} name - 设置项名称
+   * @returns {Function} 处理滑块变化的函数
+   */
   const handleSliderChange = (name) => (value) => {
     setSettings({
       ...settings,
@@ -99,7 +191,14 @@ const PrivacySettings = () => {
     });
   };
   
-  // 处理单选按钮变化
+  /**
+   * 处理单选按钮控件变化
+   * 
+   * 返回一个函数，用于更新指定设置项的值
+   * 
+   * @param {string} name - 设置项名称
+   * @returns {Function} 处理单选按钮变化的函数
+   */
   const handleRadioChange = (name) => (e) => {
     setSettings({
       ...settings,
@@ -107,14 +206,23 @@ const PrivacySettings = () => {
     });
   };
   
-  // 保存设置
+  /**
+   * 保存设置
+   * 
+   * 将当前设置保存到服务器
+   * 实际应用中应该调用API
+   */
   const handleSaveSettings = () => {
     // 这里应该调用API保存设置
     console.log('保存设置:', settings);
     // 显示成功消息
   };
   
-  // 重置设置
+  /**
+   * 重置设置
+   * 
+   * 将所有设置恢复为默认值
+   */
   const handleResetSettings = () => {
     setSettings({
       enablePSI: true,
@@ -129,6 +237,7 @@ const PrivacySettings = () => {
   return (
     <div>
       <SettingsCard>
+        {/* 设置卡片标题 */}
         <Title level={4}><SettingOutlined /> 隐私设置</Title>
         <Paragraph>
           配置您的隐私偏好，控制您的数据如何被处理和保护。
@@ -136,6 +245,7 @@ const PrivacySettings = () => {
         
         <Divider />
         
+        {/* PSI协议设置项 */}
         <SettingItem>
           <SettingHeader>
             <SettingTitle>
@@ -154,6 +264,7 @@ const PrivacySettings = () => {
             </Tooltip>
           </SettingDescription>
           
+          {/* 禁用PSI时显示警告 */}
           {!settings.enablePSI && (
             <Alert
               message="隐私风险提示"
@@ -164,6 +275,7 @@ const PrivacySettings = () => {
           )}
         </SettingItem>
         
+        {/* 本地哈希计算设置项 */}
         <SettingItem>
           <SettingHeader>
             <SettingTitle>
@@ -181,6 +293,7 @@ const PrivacySettings = () => {
           </SettingDescription>
         </SettingItem>
         
+        {/* 隐私保护级别设置项 */}
         <SettingItem>
           <SettingHeader>
             <SettingTitle>
@@ -206,6 +319,7 @@ const PrivacySettings = () => {
             />
           </SliderWrapper>
           
+          {/* 显示当前隐私级别的详细说明 */}
           <InfoBox>
             <Text strong>当前设置: </Text>
             {settings.privacyLevel === 1 && '基本隐私保护，优先考虑检测效率。'}
@@ -216,6 +330,7 @@ const PrivacySettings = () => {
           </InfoBox>
         </SettingItem>
         
+        {/* 元数据匿名化设置项 */}
         <SettingItem>
           <SettingHeader>
             <SettingTitle>
@@ -232,6 +347,7 @@ const PrivacySettings = () => {
           </SettingDescription>
         </SettingItem>
         
+        {/* 数据保留策略设置项 */}
         <SettingItem>
           <SettingHeader>
             <SettingTitle>
@@ -254,6 +370,7 @@ const PrivacySettings = () => {
           </Radio.Group>
         </SettingItem>
         
+        {/* 匿名统计数据分享设置项 */}
         <SettingItem>
           <SettingHeader>
             <SettingTitle>
@@ -270,6 +387,7 @@ const PrivacySettings = () => {
           </SettingDescription>
         </SettingItem>
         
+        {/* 隐私保护信息折叠面板 */}
         <Collapse>
           <Panel header="了解更多关于隐私保护的信息" key="1">
             <Paragraph>
@@ -289,6 +407,7 @@ const PrivacySettings = () => {
         
         <Divider />
         
+        {/* 底部按钮区域 */}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button onClick={handleResetSettings}>
             重置为默认设置
