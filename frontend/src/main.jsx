@@ -16,11 +16,10 @@ import App from './App.jsx'
 // 导入全局样式
 import './index.css'
 
-// 创建React根元素，并将其挂载到ID为'root'的DOM元素上
+// 创建React根元素，并将其挂载到id为'root'的DOM元素上（只返回第一个root元素）
 // 这个DOM元素在index.html中定义
 ReactDOM.createRoot(document.getElementById('root')).render(
-  // React.StrictMode是一个开发工具，用于突出显示应用中潜在问题
-  // 它会执行额外的检查和警告，但只在开发模式下生效
+  // 使用React.StrictMode组件包裹应用，用于检测可能的错误和警告
   <React.StrictMode>
     {/* BrowserRouter提供路由上下文，使应用中的路由功能可用 */}
     <BrowserRouter>

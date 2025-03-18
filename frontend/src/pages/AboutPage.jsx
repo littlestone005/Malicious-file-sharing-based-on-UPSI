@@ -15,7 +15,7 @@ import { Typography, Card, Collapse, Button, Space } from 'antd';
 // 导入路由链接组件
 import { Link } from 'react-router-dom';
 // 导入Ant Design图标
-import { LockOutlined, QuestionCircleOutlined, ScanOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { HomeOutlined, LockOutlined, QuestionCircleOutlined, ScanOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入隐私保护解释器组件
@@ -138,12 +138,12 @@ const AboutPage = () => {
       {/* 导航按钮区域 */}
       <div style={{ textAlign: 'center', margin: '40px 0' }}>
         <Space size="large">
-          <Button type="primary" size="large" icon={<ScanOutlined />}>
-            <Link to="/scan">开始扫描</Link>
-          </Button>
-          <Button size="large" icon={<LockOutlined />}>
-            <Link to="/">返回首页</Link>
-          </Button>
+          <Link to="/scan">
+            <Button type="primary" size="large" icon={<ScanOutlined />}>开始扫描</Button>
+          </Link>
+          <Link to="/">
+            <Button size="large" icon={<HomeOutlined />}>返回首页</Button>
+          </Link>
         </Space>
       </div>
     </AboutContainer>

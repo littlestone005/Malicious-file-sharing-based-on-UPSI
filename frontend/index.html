@@ -1,28 +1,13 @@
 <!DOCTYPE html>
-<!--
-  HTML5文档类型声明
-  这告诉浏览器这是一个HTML5文档
--->
-
-<!--
-  html元素是文档的根元素
-  lang属性设置为"zh-CN"，表示文档的主要语言是简体中文
-  这有助于搜索引擎和屏幕阅读器正确处理文档内容
--->
 <html lang="zh-CN">
   <head>
-    <!--
-      meta charset定义文档的字符编码
-      UTF-8是一种通用的编码，支持多种语言字符
-    -->
     <meta charset="UTF-8" />
     
     <!--
       favicon设置
-      使用SVG格式的盾牌图标作为网站图标
-      这将显示在浏览器标签、书签和收藏夹中
+      使用png格式的盾牌图标作为网站图标
     -->
-    <link rel="icon" type="image/svg+xml" href="/shield.svg" />
+    <link rel="icon" type="image/png" href="/shield.png" />
     
     <!--
       视口设置
@@ -34,10 +19,8 @@
     
     <!--
       页面标题
-      显示在浏览器标签上，也用于搜索引擎结果
-      包含了个人与企业用户的信息，增强SEO效果
     -->
-    <title>隐私保护恶意软件检测 - 个人与企业安全解决方案</title>
+    <title>隐私保护恶意软件检测方案</title>
     
     <!--
       页面描述
@@ -48,17 +31,14 @@
   </head>
   <body>
     <!--
-      根容器div
-      React应用将挂载到这个元素上
+      创建根容器div
+      React应用将挂载到该容器中
       整个应用的UI将在这个div内渲染
     -->
     <div id="root"></div>
     
     <!--
-      主JavaScript入口点
-      type="module"表示使用ES模块语法
-      src指向React应用的入口文件
-      Vite会处理这个导入，并构建整个应用
+      主JavaScript入口点,加载React应用
     -->
     <script type="module" src="/src/main.jsx"></script>
   </body>

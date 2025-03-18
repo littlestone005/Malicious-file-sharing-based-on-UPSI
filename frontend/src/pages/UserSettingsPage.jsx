@@ -204,7 +204,7 @@ const UserSettingsPage = () => {
   return (
     <SettingsContainer>
       {/* 面包屑导航 */}
-      <Breadcrumb style={{ marginBottom: 16 }}>
+      {/*<Breadcrumb style={{ marginBottom: 16 }}>
         <Breadcrumb.Item href="/">
           <HomeOutlined />
           <span>首页</span>
@@ -213,7 +213,7 @@ const UserSettingsPage = () => {
           <SettingOutlined />
           <span>用户设置</span>
         </Breadcrumb.Item>
-      </Breadcrumb>
+      </Breadcrumb>*/}
       
       {/* 页面标题 */}
       <Title level={2}>用户设置</Title>

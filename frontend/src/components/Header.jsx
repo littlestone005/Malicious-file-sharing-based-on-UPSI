@@ -40,9 +40,6 @@ const { Header: AntHeader } = Layout;
 
 /**
  * 自定义样式的头部组件
- * 
- * 使用flex布局使logo、菜单和用户区域水平排列
- * 设置深色背景和底部边框
  */
 const StyledHeader = styled(AntHeader)`
   display: flex;
@@ -54,9 +51,6 @@ const StyledHeader = styled(AntHeader)`
 
 /**
  * Logo区域样式
- * 
- * 包含图标和应用名称
- * 在移动设备上隐藏文字，只显示图标
  */
 const Logo = styled.div`
   display: flex;
@@ -77,8 +71,6 @@ const Logo = styled.div`
 
 /**
  * 盾牌图标样式
- * 
- * 设置大小和颜色，作为应用的logo
  */
 const ShieldIcon = styled(SafetyOutlined)`
   font-size: 24px;
@@ -110,8 +102,6 @@ const UserSection = styled.div`
 
 /**
  * 用户头像样式
- * 
- * 设置鼠标指针样式和背景色
  */
 const UserAvatar = styled(Avatar)`
   cursor: pointer;
@@ -120,8 +110,6 @@ const UserAvatar = styled(Avatar)`
 
 /**
  * 用户信息区域样式
- * 
- * 用于显示用户类型标签和头像
  */
 const UserInfo = styled.div`
   display: flex;
@@ -169,12 +157,7 @@ const Header = () => {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: <Link to="/settings">个人资料</Link>,
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: <Link to="/settings">设置</Link>,
+      label: <Link to="/settings">个人资料&设置</Link>,
     },
     {
       type: 'divider', // 分隔线

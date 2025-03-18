@@ -38,58 +38,40 @@ import HistoryPage from './pages/HistoryPage'
 export const UserContext = createContext(null);
 
 /**
- * 主题配置
- * 
- * 定义应用的颜色方案和视觉风格
- * - colorPrimary: 主色调，用于强调和品牌识别
- * - colorSuccess: 成功状态的颜色，用于安全文件指示
- * - colorError: 错误状态的颜色，用于危险/警告指示
- * - borderRadius: 边框圆角大小
- * 
- * 使用暗色主题算法，营造安全感和专业感
+ * 主题配置，使用暗色主题算法
  */
 const themeConfig = {
   token: {
-    colorPrimary: '#1a5fb4', // 深蓝色，代表安全感
-    colorSuccess: '#2ec27e', // 绿色，代表安全状态
+    colorPrimary: '#1a5fb4',   // 深蓝色，代表安全感
+    colorSuccess: '#2ec27e',  // 绿色，代表安全状态
     colorError: '#e01b24',   // 红色，代表危险/警告
     borderRadius: 8,
   },
-  algorithm: theme.darkAlgorithm, // 暗色主题，增强安全感
+  algorithm: theme.darkAlgorithm, // 暗色主题
 };
 
 /**
  * 应用容器样式组件
- * 
- * 设置应用的最小高度为视口高度，
- * 使用flex布局确保即使内容较少，页脚也会固定在底部
  */
 const AppContainer = styled.div`
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;         // 确保整个应用至少有视口高度
+  display: flex;            // 使用弹性布局
+  flex-direction: column;  // 垂直方向排列
 `;
 
 /**
  * 内容区容器样式组件
- * 
- * 设置内容区域的样式：
- * - flex: 1 使其占据除头部和底部外的所有空间
- * - padding: 内边距
- * - max-width: 最大宽度限制，确保在大屏幕上内容不会过宽
- * - margin: 水平居中
  */
 const ContentContainer = styled.main`
   flex: 1;
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
+  padding: 20px;      // 内边距
+  max-width: 1200px; // 最大宽度
+  margin: 0 auto;   // 居中
+  width: 100%;     // 宽度100%
 `;
 
 /**
  * 应用主组件
- * 
  * 管理全局状态并构建应用的基本结构
  */
 function App() {
@@ -101,32 +83,22 @@ function App() {
   return (
     // 提供用户上下文，使所有子组件都能访问用户状态
     <UserContext.Provider value={{ user, setUser }}>
-      {/* 配置Ant Design主题 */}
-      <ConfigProvider theme={themeConfig}>
-        {/* 应用主容器 */}
-        <AppContainer>
-          {/* 页面头部，包含导航和用户信息 */}
-          <Header />
-          {/* 内容区域，包含所有页面路由 */}
-          <ContentContainer>
-            {/* 路由配置，定义URL路径与页面组件的映射关系 */}
-            <Routes>
-              {/* 首页路由 */}
-              <Route path="/" element={<HomePage />} />
-              {/* 扫描页面路由，传入setScanResults函数以便更新扫描结果 */}
-              <Route path="/scan" element={<ScanPage setScanResults={setScanResults} />} />
-              {/* 用户设置页面路由 */}
-              <Route path="/settings" element={<UserSettingsPage />} />
-              {/* 历史记录页面路由 */}
-              <Route path="/history" element={<HistoryPage />} />
-              {/* 结果页面路由，接收scanId参数并传入scanResults */}
-              <Route path="/results/:scanId" element={<ResultsPage scanResults={scanResults} />} />
-              {/* 关于页面路由 */}
-              <Route path="/about" element={<AboutPage />} />
+      <ConfigProvider theme={themeConfig}>        {/* 配置Ant Design主题 */}
+        <AppContainer>                            {/* 应用主容器 */}
+          <Header />                              {/* 页面头部，包含导航和用户信息 */}
+          <ContentContainer>                      {/* 内容区域，包含所有页面路由 */}
+            
+            <Routes>                              {/* 路由配置，定义URL路径与页面组件的映射关系 */}
+              <Route path="/" element={<HomePage />} />                 {/* 首页路由 */}
+              <Route path="/scan" element={<ScanPage setScanResults={setScanResults} />} />               {/* 扫描页面路由，传入setScanResults函数以便更新扫描结果 */}
+              <Route path="/settings" element={<UserSettingsPage />} />                     {/* 用户设置页面路由 */}
+              <Route path="/history" element={<HistoryPage />} />                           {/* 历史记录页面路由 */}
+              <Route path="/results/:scanId" element={<ResultsPage scanResults={scanResults} />} />       {/* 结果页面路由，接收scanId参数并传入scanResults */}
+              <Route path="/about" element={<AboutPage />} />           {/* 关于页面路由 */}
             </Routes>
+            
           </ContentContainer>
-          {/* 页面底部，包含版权信息等 */}
-          <Footer />
+          <Footer />                               {/* 页面底部，包含版权信息等 */}
         </AppContainer>
       </ConfigProvider>
     </UserContext.Provider>

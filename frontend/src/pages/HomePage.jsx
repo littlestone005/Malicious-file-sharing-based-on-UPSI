@@ -14,7 +14,7 @@ import { Typography, Button, Space, Card, Row, Col } from 'antd';
 // 导入路由链接组件
 import { Link } from 'react-router-dom';
 // 导入Ant Design图标
-import { SafetyOutlined, LockOutlined, ScanOutlined } from '@ant-design/icons';
+import { SafetyOutlined, LockOutlined, ScanOutlined, InfoCircleOutlined } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入隐私保护解释器组件
@@ -91,12 +91,12 @@ const HomePage = () => {
           在不泄露隐私的情况下扫描您的文件。我们的系统使用先进的加密技术，确保只有恶意文件才会被识别。
         </Paragraph>
         <Space size="large">
-          <Button type="primary" size="large" icon={<ScanOutlined />}>
-            <Link to="/scan">开始扫描</Link>
-          </Button>
-          <Button size="large" icon={<LockOutlined />}>
-            <Link to="/about">了解PSI协议</Link>
-          </Button>
+          <Link to="/scan">
+            <Button type="primary" size="large" icon={<ScanOutlined />}>开始扫描</Button>
+          </Link>
+          <Link to="/about">
+            <Button size="large" icon={<InfoCircleOutlined />}>了解PSI协议</Button>
+          </Link>
         </Space>
       </HeroSection>
 
