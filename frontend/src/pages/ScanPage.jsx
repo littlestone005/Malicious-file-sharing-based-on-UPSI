@@ -10,13 +10,13 @@
  * 页面使用步骤条展示当前扫描进度，并根据用户类型显示不同的功能
  */
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 // 导入Ant Design组件
-import { Typography, Card, Steps, Button, Badge } from 'antd';
+import { Typography, Card, Steps, Button, Badge, Alert, Spin } from 'antd';
 // 导入路由导航钩子
 import { useNavigate } from 'react-router-dom';
 // 导入Ant Design图标
-import { FileAddOutlined, ScanOutlined, SafetyCertificateOutlined, BankOutlined } from '@ant-design/icons';
+import { FileAddOutlined, ScanOutlined, SafetyCertificateOutlined, BankOutlined, LoginOutlined } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入文件上传器组件
@@ -34,7 +34,7 @@ const { Title, Paragraph } = Typography;
  * 限制内容宽度，提高可读性
  */
 const ScanContainer = styled.div`
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 `;
 
@@ -69,6 +69,27 @@ const EnterpriseTag = styled(Badge)`
 `;
 
 /**
+ * 登录提醒样式
+ * 
+ * 设置底部外边距
+ * 用于显示未登录提醒消息
+ */
+const LoginAlert = styled(Alert)`
+  margin-bottom: 20px;
+`;
+
+/**
+ * 加载中容器样式
+ */
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+`;
+
+/**
  * 扫描页面组件
  * 
  * 管理文件扫描流程，包括文件上传、扫描和结果导航
@@ -86,9 +107,33 @@ const ScanPage = ({ setScanResults }) => {
   const [currentStep, setCurrentStep] = useState(0);
   // 加载状态
   const [isLoading, setIsLoading] = useState(false);
+  // 页面初始化状态
+  const [initializing, setInitializing] = useState(true);
   
   // 判断是否为企业用户
   const isEnterpriseUser = user?.userType === 'enterprise';
+  // 判断用户是否已登录
+  const isLoggedIn = !!user;
+
+  /**
+   * 页面初始化效果
+   * 
+   * 短暂延迟后将页面设置为已初始化状态，防止闪烁
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitializing(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  /**
+   * 导航到登录页面
+   */
+  const goToLogin = () => {
+    navigate('/login', { state: { from: '/scan' } });
+  };
 
   /**
    * 处理文件处理完成事件
@@ -126,6 +171,7 @@ const ScanPage = ({ setScanResults }) => {
           onFilesProcessed={handleFilesProcessed}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
+          isDisabled={!isLoggedIn}
         />
       ),
     },
@@ -159,8 +205,33 @@ const ScanPage = ({ setScanResults }) => {
     },
   ];
 
+  // 如果页面正在初始化，显示加载状态
+  if (initializing) {
+    return (
+      <ScanContainer>
+        <LoadingContainer>
+          <Spin size="large" tip="加载中..." />
+        </LoadingContainer>
+      </ScanContainer>
+    );
+  }
+
   return (
     <ScanContainer>
+      {/* 未登录提醒 */}
+      {!isLoggedIn && (
+        <LoginAlert
+          message="您尚未登录"
+          description={
+            <span>
+              请先登录以使用文件扫描功能。登录后您可以查看扫描历史并获得完整的扫描服务。
+            </span>
+          }
+          type="warning"
+          showIcon
+        />
+      )}
+
       {/* 页面标题和企业版标识 */}
       <Title level={2}>
         扫描文件检测恶意软件
@@ -172,6 +243,7 @@ const ScanPage = ({ setScanResults }) => {
       <Paragraph>
         上传您的文件以扫描恶意内容。通过我们的PSI协议实现，您的隐私将受到保护。
         {isEnterpriseUser && ' 作为企业用户，您可以批量上传多个文件进行扫描。'}
+        {!isLoggedIn && ' 请登录以获得完整的扫描服务和历史记录追踪。'}
       </Paragraph>
 
       {/* 步骤条 */}

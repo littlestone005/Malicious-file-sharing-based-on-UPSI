@@ -16,13 +16,15 @@ import { useState, useCallback, useContext } from 'react';
 // 导入Ant Design组件
 import { Upload, Button, Switch, Card, Typography, message, Spin, Alert, Tabs } from 'antd';
 // 导入Ant Design图标
-import { InboxOutlined, LockOutlined, UnlockOutlined, BankOutlined, FileOutlined } from '@ant-design/icons';
+import { InboxOutlined, LockOutlined, UnlockOutlined, BankOutlined, FileOutlined, LoginOutlined } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入加密库，用于计算文件哈希
 import CryptoJS from 'crypto-js';
 // 导入用户上下文
 import { UserContext } from '../App';
+// 导入路由导航钩子
+import { useNavigate } from 'react-router-dom';
 
 // 从Upload组件中解构出Dragger子组件，用于拖拽上传
 const { Dragger } = Upload;
@@ -112,14 +114,27 @@ const FileIcon = styled(FileOutlined)`
 `;
 
 /**
+ * 登录提示容器样式
+ * 
+ * 设置文本居中和内边距
+ */
+const LoginPromptContainer = styled.div`
+  text-align: center;
+  padding: 30px 0;
+`;
+
+/**
  * 文件上传组件
  * 
  * @param {Object} props - 组件属性
  * @param {Function} props.onFilesProcessed - 文件处理完成后的回调函数
  * @param {boolean} props.isLoading - 加载状态
  * @param {Function} props.setIsLoading - 设置加载状态的函数
+ * @param {boolean} props.isDisabled - 是否禁用上传功能（未登录时）
  */
-const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
+const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = false }) => {
+  // 路由导航钩子
+  const navigate = useNavigate();
   // 从用户上下文中获取用户信息
   const { user } = useContext(UserContext);
   // 文件列表状态
@@ -131,6 +146,13 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
   
   // 判断当前用户是否为企业用户
   const isEnterpriseUser = user?.userType === 'enterprise';
+
+  /**
+   * 导航到登录页面
+   */
+  const goToLogin = () => {
+    navigate('/login', { state: { from: '/scan' } });
+  };
 
   /**
    * 计算文件的SHA-256哈希值
@@ -171,6 +193,12 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
    * 计算所有文件的哈希值，然后调用onFilesProcessed回调
    */
   const handleUpload = async () => {
+    // 如果未登录，提示用户登录
+    if (isDisabled) {
+      message.warning('请先登录以使用文件扫描功能');
+      return;
+    }
+
     // 检查是否有选择文件
     if (fileList.length === 0) {
       message.error('请至少选择一个文件进行扫描');
@@ -225,6 +253,10 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
    * @param {Array} info.fileList - 新的文件列表
    */
   const handleFileChange = ({ fileList: newFileList }) => {
+    if (isDisabled) {
+      message.warning('请先登录以使用文件扫描功能');
+      return;
+    }
     setFileList(newFileList);
   };
 
@@ -253,6 +285,12 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
    * @param {Event} e - 文件输入事件
    */
   const handleBatchUpload = (e) => {
+    // 如果未登录，提示用户登录
+    if (isDisabled) {
+      message.warning('请先登录以使用文件扫描功能');
+      return;
+    }
+
     // 获取选择的文件数组
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -269,19 +307,31 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
     setFileList([...fileList, ...newFileList]);
   };
 
+  // 如果组件被禁用（用户未登录），显示登录提示
+  if (isDisabled) {
+    return (
+      <UploaderContainer>
+        <LoginPromptContainer>
+          <LockOutlined style={{ fontSize: '48px', color: 'var(--color-warning)', marginBottom: '20px' }} />
+          <Title level={4}>请登录以使用文件扫描功能</Title>
+          <Paragraph>
+            登录后您可以上传文件进行恶意软件检测，并查看您的扫描历史记录。
+          </Paragraph>
+          <Button 
+            type="primary" 
+            icon={<LoginOutlined />} 
+            size="large"
+            onClick={goToLogin}
+          >
+            立即登录
+          </Button>
+        </LoginPromptContainer>
+      </UploaderContainer>
+    );
+  }
+
   return (
-    <UploaderContainer>
-      {/* 企业用户提示信息 */}
-      {isEnterpriseUser && (
-        <EnterpriseAlert
-          message="企业用户批量扫描"
-          description="作为企业用户，您可以批量上传多个文件进行扫描。我们将为您提供详细的扫描报告。"
-          type="info"
-          showIcon
-          icon={<BankOutlined />}
-        />
-      )}
-      
+    <UploaderContainer>      
       {/* 隐私模式切换 */}
       <PrivacyToggle>
         <Switch 
@@ -300,77 +350,14 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
         </PrivacyInfo>
       </PrivacyToggle>
 
-      {/* 根据用户类型显示不同的上传界面 */}
-      {isEnterpriseUser ? (
-        // 企业用户：显示标签页，支持单文件和批量上传
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          {/* 单文件上传标签页 */}
-          <TabPane tab="单文件上传" key="single">
-            <Dragger
-              fileList={fileList}
-              onChange={handleFileChange}
-              customRequest={customRequest}
-              multiple={true}
-              showUploadList={true}
-            >
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined style={{ color: 'var(--color-primary)', fontSize: '48px' }} />
-              </p>
-              <p className="ant-upload-text">点击或拖拽文件到此区域进行扫描</p>
-              <p className="ant-upload-hint">
-                支持单个或批量上传。文件将在本地进行哈希处理以保护隐私。
-              </p>
-            </Dragger>
-          </TabPane>
-          
-          {/* 批量上传标签页 */}
-          <TabPane tab="批量上传" key="batch">
-            <Card>
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                {/* 隐藏的文件输入框 */}
-                <input
-                  type="file"
-                  multiple
-                  id="batch-file-input"
-                  style={{ display: 'none' }}
-                  onChange={handleBatchUpload}
-                />
-                {/* 文件选择按钮 */}
-                <Button 
-                  type="primary" 
-                  onClick={() => document.getElementById('batch-file-input').click()}
-                  style={{ marginBottom: '20px' }}
-                >
-                  选择多个文件
-                </Button>
-                
-                {/* 文件列表显示 */}
-                <FileList>
-                  {fileList.length > 0 ? (
-                    // 显示已选择的文件
-                    fileList.map((file, index) => (
-                      <FileItem key={file.uid || index}>
-                        <FileIcon />
-                        <Text>{file.name}</Text>
-                      </FileItem>
-                    ))
-                  ) : (
-                    // 未选择文件时显示提示
-                    <Text type="secondary">尚未选择文件</Text>
-                  )}
-                </FileList>
-              </div>
-            </Card>
-          </TabPane>
-        </Tabs>
-      ) : (
-        // 个人用户：只显示标准拖拽上传区域
-        <Dragger
+
+      <Dragger
           fileList={fileList}
           onChange={handleFileChange}
           customRequest={customRequest}
           multiple={true}
           showUploadList={true}
+          disabled={isDisabled}
         >
           <p className="ant-upload-drag-icon">
             <InboxOutlined style={{ color: 'var(--color-primary)', fontSize: '48px' }} />
@@ -379,8 +366,7 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
           <p className="ant-upload-hint">
             支持单个或批量上传。文件将在本地进行哈希处理以保护隐私。
           </p>
-        </Dragger>
-      )}
+      </Dragger>
 
       {/* 扫描按钮 */}
       <div style={{ textAlign: 'center', marginTop: '20px' }}>
@@ -388,7 +374,7 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading }) => {
           type="primary" 
           onClick={handleUpload} 
           size="large"
-          disabled={fileList.length === 0 || isLoading}
+          disabled={fileList.length === 0 || isLoading || isDisabled}
         >
           {isLoading ? <Spin size="small" /> : '扫描文件'}
         </Button>

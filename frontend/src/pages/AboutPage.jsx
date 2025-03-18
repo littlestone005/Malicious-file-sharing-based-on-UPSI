@@ -33,7 +33,7 @@ const { Panel } = Collapse;
  * 限制内容宽度，提高可读性
  */
 const AboutContainer = styled.div`
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 `;
 

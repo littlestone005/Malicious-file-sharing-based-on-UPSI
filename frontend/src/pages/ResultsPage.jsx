@@ -17,7 +17,9 @@ import {
   Col,
   Divider,
   Badge,
-  Tabs
+  Tabs,
+  Alert,
+  message
 } from 'antd';
 import { 
   HomeOutlined, 
@@ -30,10 +32,10 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   FileOutlined,
-  BankOutlined
+  BankOutlined,
+  LoginOutlined,
+  LockOutlined
 } from '@ant-design/icons';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import DetailedResults from '../components/DetailedResults';
 import { UserContext } from '../App';
 
@@ -43,7 +45,7 @@ const { TabPane } = Tabs;
 
 const PageContainer = styled(Content)`
   padding: 24px;
-  background: #f0f2f5;
+  background:rgb(16, 17, 17);
   min-height: calc(100vh - 64px - 70px);
 `;
 
@@ -75,6 +77,42 @@ const EnterpriseTag = styled(Badge)`
   margin-left: 10px;
 `;
 
+/**
+ * 登录提醒样式
+ * 
+ * 设置底部外边距
+ * 用于显示未登录提醒消息
+ */
+const LoginAlert = styled(Alert)`
+  margin-bottom: 20px;
+`;
+
+/**
+ * 登录提示容器样式
+ * 
+ * 设置文本居中、内边距和背景颜色
+ * 用于替代扫描结果内容显示登录提示
+ */
+const LoginPromptContainer = styled.div`
+  text-align: center;
+  padding: 60px 20px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+`;
+
+/**
+ * 加载中容器样式
+ */
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+`;
+
 const ResultsPage = ({ scanResults }) => {
   const { scanId } = useParams();
   const navigate = useNavigate();
@@ -82,8 +120,32 @@ const ResultsPage = ({ scanResults }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
+  // 页面初始化状态
+  const [initializing, setInitializing] = useState(true);
   
+  // 判断用户是否已登录
+  const isLoggedIn = !!user;
   const isEnterpriseUser = user?.userType === 'enterprise';
+
+  /**
+   * 页面初始化效果
+   * 
+   * 短暂延迟后将页面设置为已初始化状态，防止闪烁
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitializing(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  /**
+   * 导航到登录页面
+   */
+  const goToLogin = () => {
+    navigate('/login', { state: { from: `/results/${scanId}` } });
+  };
 
   useEffect(() => {
     // 模拟从API获取结果
@@ -103,12 +165,20 @@ const ResultsPage = ({ scanResults }) => {
   
   // 导出报告
   const handleExport = () => {
+    if (!isLoggedIn) {
+      message.warning('请先登录以导出报告');
+      return;
+    }
     console.log('导出报告:', scanId);
     // 实际应用中应该调用API导出报告
   };
   
   // 分享结果
   const handleShare = () => {
+    if (!isLoggedIn) {
+      message.warning('请先登录以分享结果');
+      return;
+    }
     console.log('分享结果:', scanId);
     // 实际应用中应该实现分享功能
   };
@@ -210,11 +280,25 @@ const ResultsPage = ({ scanResults }) => {
     };
   };
   
+  // 如果页面正在初始化，显示加载状态
+  if (initializing) {
+    return (
+      <Layout>
+        <PageContainer>
+          <ResultsContainer>
+            <LoadingContainer>
+              <Spin size="large" tip="加载中..." />
+            </LoadingContainer>
+          </ResultsContainer>
+        </PageContainer>
+      </Layout>
+    );
+  }
+  
   // 渲染加载状态
   if (loading) {
     return (
       <Layout>
-        <Header />
         <PageContainer>
           <ResultsContainer>
             <div style={{ textAlign: 'center', padding: '100px 0' }}>
@@ -225,7 +309,6 @@ const ResultsPage = ({ scanResults }) => {
             </div>
           </ResultsContainer>
         </PageContainer>
-        <Footer />
       </Layout>
     );
   }
@@ -234,7 +317,6 @@ const ResultsPage = ({ scanResults }) => {
   if (error) {
     return (
       <Layout>
-        <Header />
         <PageContainer>
           <ResultsContainer>
             <Result
@@ -249,70 +331,38 @@ const ResultsPage = ({ scanResults }) => {
             />
           </ResultsContainer>
         </PageContainer>
-        <Footer />
       </Layout>
     );
   }
   
-  const columns = [
-    {
-      title: '文件名',
-      dataIndex: 'fileName',
-      key: 'fileName',
-      render: (text) => <span><FileOutlined style={{ marginRight: 8 }} />{text}</span>,
-    },
-    {
-      title: '文件大小',
-      dataIndex: 'fileSize',
-      key: 'fileSize',
-      render: (size) => {
-        const kb = size / 1024;
-        const mb = kb / 1024;
-        return mb >= 1 ? `${mb.toFixed(2)} MB` : `${kb.toFixed(2)} KB`;
-      },
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        if (status === 'malicious') {
-          return <Tag color="error" icon={<CloseCircleOutlined />}>恶意软件</Tag>;
-        }
-        return <Tag color="success" icon={<CheckCircleOutlined />}>安全</Tag>;
-      },
-    },
-    {
-      title: '威胁类型',
-      dataIndex: 'threatType',
-      key: 'threatType',
-      render: (type) => type ? <Tag color="volcano">{type}</Tag> : '-',
-    },
-    {
-      title: '置信度',
-      dataIndex: 'confidence',
-      key: 'confidence',
-      render: (confidence) => confidence ? `${confidence}%` : '-',
-    },
-  ];
-
-  // 企业版额外的列
-  const enterpriseColumns = [
-    ...columns,
-    {
-      title: '检测方法',
-      dataIndex: 'detectionMethod',
-      key: 'detectionMethod',
-      render: (method) => method ? <Tag color="blue">{method}</Tag> : '-',
-    }
-  ];
-
+  // 渲染扫描结果
   return (
     <Layout>
-      <Header />
-      
       <PageContainer>
         <ResultsContainer>
+          {/* 未登录提醒 */}
+          {!isLoggedIn && (
+            <LoginAlert
+              message="您尚未登录"
+              description={
+                <span>
+                  请先登录以查看完整的扫描结果详情、保存结果到您的历史记录，以及获取更多功能。
+                  <Button 
+                    type="primary" 
+                    icon={<LoginOutlined />} 
+                    style={{ marginLeft: 10 }}
+                    onClick={goToLogin}
+                  >
+                    立即登录
+                  </Button>
+                </span>
+              }
+              type="warning"
+              showIcon
+            />
+          )}
+
+          {/* 面包屑导航 */}
           <Breadcrumb style={{ marginBottom: 16 }}>
             <Breadcrumb.Item href="/">
               <HomeOutlined />
@@ -323,164 +373,135 @@ const ResultsPage = ({ scanResults }) => {
               <span>扫描</span>
             </Breadcrumb.Item>
             <Breadcrumb.Item>
+              <SafetyOutlined />
               <span>扫描结果</span>
             </Breadcrumb.Item>
           </Breadcrumb>
           
-          <ActionButtons>
+          {/* 标题和导航按钮 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
             <Button 
               icon={<ArrowLeftOutlined />} 
+              style={{ marginRight: 16 }} 
               onClick={handleBack}
             >
               返回
             </Button>
-            
+            <Title level={2} style={{ margin: 0 }}>
+              扫描结果 
+              {results.isEnterpriseReport && (
+                <EnterpriseTag color="gold" count={<span style={{ color: '#fff' }}><BankOutlined /> 企业版</span>} />
+              )}
+            </Title>
+          </div>
+          
+          <Paragraph>
+            扫描ID: {results.scanId} | 扫描时间: {new Date(results.timestamp).toLocaleString()}
+            {!isLoggedIn && ' | 登录后可保存结果并进行更多操作'}
+          </Paragraph>
+          
+          {/* 导出和分享按钮 */}
+          <ActionButtons>
+            <Button 
+              type="default" 
+              onClick={handleBack}
+            >
+              新的扫描
+            </Button>
             <Space>
               <Button 
-                icon={<DownloadOutlined />}
+                icon={<DownloadOutlined />} 
                 onClick={handleExport}
+                disabled={!isLoggedIn}
               >
                 导出报告
               </Button>
-              
               <Button 
-                icon={<ShareAltOutlined />}
+                type="primary" 
+                icon={<ShareAltOutlined />} 
                 onClick={handleShare}
+                disabled={!isLoggedIn}
               >
-                分享
+                分享结果
               </Button>
             </Space>
           </ActionButtons>
           
-          <Title level={2}>
-            扫描结果
-            {results.isEnterpriseReport && (
-              <EnterpriseTag color="gold" count={<span style={{ color: '#fff' }}><BankOutlined /> 企业版</span>} />
-            )}
-          </Title>
-          <Paragraph>
-            扫描ID: {results.scanId} | 时间: {new Date(results.timestamp).toLocaleString()}
-            {results.isEnterpriseReport && ` | 批次ID: ${results.enterpriseDetails.batchId}`}
-          </Paragraph>
-
+          {/* 状态卡片 - 基本信息始终显示 */}
           <StatusCard>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>
+            <Title level={3} style={{ color: results.maliciousFiles > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
               {results.maliciousFiles > 0 ? (
-                <WarningOutlined style={{ color: 'var(--color-error)' }} />
+                <><CloseCircleOutlined /> 检测到威胁</>
               ) : (
-                <SafetyOutlined style={{ color: 'var(--color-success)' }} />
+                <><CheckCircleOutlined /> 未检测到威胁</>
               )}
-            </div>
-            <Title level={3}>
-              {results.maliciousFiles > 0 
-                ? `检测到 ${results.maliciousFiles} 个恶意文件` 
-                : '未检测到恶意软件'}
             </Title>
             <Paragraph>
-              {results.usedPSI 
-                ? '使用PSI协议进行扫描，保护了您的隐私。' 
-                : '使用标准扫描完成。'}
+              {results.usedPSI ? '已启用隐私保护扫描 (PSI)' : '标准扫描模式'}
             </Paragraph>
           </StatusCard>
-
-          <StatsRow gutter={16}>
-            <Col span={8}>
-              <Card>
-                <Statistic 
-                  title="总文件数" 
-                  value={results.totalFiles} 
-                  prefix={<FileOutlined />} 
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <Statistic 
-                  title="安全文件" 
-                  value={results.safeFiles} 
-                  valueStyle={{ color: 'var(--color-success)' }}
-                  prefix={<CheckCircleOutlined />} 
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <Statistic 
-                  title="恶意文件" 
-                  value={results.maliciousFiles} 
-                  valueStyle={{ color: 'var(--color-error)' }}
-                  prefix={<CloseCircleOutlined />} 
-                />
-              </Card>
-            </Col>
-          </StatsRow>
-
-          {results.isEnterpriseReport ? (
-            <Tabs defaultActiveKey="files">
-              <TabPane tab="文件扫描结果" key="files">
-                <ResultsCard>
-                  <Table 
-                    columns={enterpriseColumns} 
-                    dataSource={results.fileResults} 
-                    pagination={results.fileResults.length > 10}
-                  />
-                </ResultsCard>
-              </TabPane>
-              <TabPane tab="企业报告" key="enterprise">
-                <ResultsCard>
-                  <Row gutter={[16, 16]}>
-                    <Col span={12}>
-                      <Card title="风险评估">
-                        <Statistic 
-                          title="风险等级" 
-                          value={results.enterpriseDetails.riskLevel} 
-                          valueStyle={{ 
-                            color: results.enterpriseDetails.riskLevel === 'High' 
-                              ? 'var(--color-error)' 
-                              : 'var(--color-warning)' 
-                          }}
-                        />
-                        <Divider />
-                        <Title level={4}>威胁类别分布</Title>
-                        {Object.entries(results.enterpriseDetails.threatCategories).map(([category, count]) => (
-                          <div key={category} style={{ marginBottom: 8 }}>
-                            <Text>{category}: </Text>
-                            {Array(count).fill().map((_, i) => (
-                              <Tag key={i} color="error">■</Tag>
-                            ))}
-                            {count === 0 && <Tag color="default">0</Tag>}
-                          </div>
-                        ))}
-                      </Card>
-                    </Col>
-                    <Col span={12}>
-                      <Card title="建议操作">
-                        <ul>
-                          {results.enterpriseDetails.recommendedActions.map((action, index) => (
-                            <li key={index} style={{ marginBottom: 12 }}>
-                              <Text>{action}</Text>
-                            </li>
-                          ))}
-                        </ul>
-                      </Card>
-                    </Col>
-                  </Row>
-                </ResultsCard>
-              </TabPane>
-            </Tabs>
-          ) : (
-            <ResultsCard>
-              <Table 
-                columns={columns} 
-                dataSource={results.fileResults} 
-                pagination={false}
+          
+          {/* 根据登录状态显示不同内容 */}
+          {isLoggedIn ? (
+            <>
+              {/* 扫描统计 */}
+              <ResultsCard>
+                <StatsRow gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Statistic 
+                      title="已扫描文件" 
+                      value={results.totalFiles} 
+                      prefix={<FileOutlined />} 
+                    />
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Statistic 
+                      title="安全文件" 
+                      value={results.safeFiles} 
+                      valueStyle={{ color: 'var(--color-success)' }}
+                      prefix={<CheckCircleOutlined />} 
+                    />
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Statistic 
+                      title="受感染文件" 
+                      value={results.maliciousFiles} 
+                      valueStyle={{ color: 'var(--color-error)' }}
+                      prefix={<CloseCircleOutlined />} 
+                    />
+                  </Col>
+                </StatsRow>
+              </ResultsCard>
+              
+              {/* 详细结果 */}
+              <DetailedResults 
+                results={results} 
+                isEnterpriseUser={results.isEnterpriseReport} 
               />
-            </ResultsCard>
+            </>
+          ) : (
+            <LoginPromptContainer>
+              <LockOutlined style={{ fontSize: '64px', color: 'var(--color-warning)', marginBottom: '20px' }} />
+              <Title level={3}>需要登录才能查看完整扫描结果</Title>
+              <Paragraph style={{ fontSize: '16px', maxWidth: '500px', margin: '0 auto 20px' }}>
+                登录后您可以查看详细的扫描结果、威胁分析、保存结果到您的历史记录，
+                以及下载完整报告或分享结果。
+              </Paragraph>
+              <Paragraph type="secondary">
+                {results.totalFiles}个文件中检测到{results.maliciousFiles}个威胁
+              </Paragraph>
+              <Button 
+                type="primary" 
+                size="large"
+                icon={<LoginOutlined />}
+                onClick={goToLogin}
+              >
+                登录查看完整结果
+              </Button>
+            </LoginPromptContainer>
           )}
         </ResultsContainer>
       </PageContainer>
-      
-      <Footer />
     </Layout>
   );
 };
