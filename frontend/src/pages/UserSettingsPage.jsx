@@ -1,5 +1,19 @@
+/**
+ * 用户设置页面组件
+ * 
+ * 这个组件实现了用户设置页面，包括：
+ * 1. 个人资料设置（基本信息、偏好设置）
+ * 2. 安全设置（密码修改、两步验证）
+ * 3. 通知设置（通知方式、通知类型）
+ * 4. 隐私设置（使用PrivacySettings组件）
+ * 
+ * 页面使用标签页布局，方便用户在不同设置类别间切换
+ */
+
 import React, { useState } from 'react';
+// 导入样式组件库
 import styled from 'styled-components';
+// 导入Ant Design组件
 import { 
   Typography, 
   Breadcrumb, 
@@ -15,6 +29,7 @@ import {
   Upload,
   Divider
 } from 'antd';
+// 导入Ant Design图标
 import { 
   UserOutlined, 
   LockOutlined, 
@@ -24,23 +39,45 @@ import {
   UploadOutlined,
   HomeOutlined
 } from '@ant-design/icons';
+// 导入隐私设置组件
 import PrivacySettings from '../components/PrivacySettings';
 
+// 从Typography组件中解构出需要的子组件
 const { Title, Text } = Typography;
+// 从Tabs组件中解构出TabPane子组件
 const { TabPane } = Tabs;
+// 从Select组件中解构出Option子组件
 const { Option } = Select;
 
+/**
+ * 设置页面容器样式
+ * 
+ * 设置最大宽度和水平居中
+ * 限制内容宽度，提高可读性
+ */
 const SettingsContainer = styled.div`
   max-width: 1000px;
   margin: 0 auto;
 `;
 
+/**
+ * 个人资料卡片样式
+ * 
+ * 设置底部外边距、圆角和阴影效果
+ * 增强卡片的视觉层次感
+ */
 const ProfileCard = styled(Card)`
   margin-bottom: 24px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 `;
 
+/**
+ * 个人资料头部样式
+ * 
+ * 使用flex布局对齐头像和用户信息
+ * 在移动设备上切换为垂直布局
+ */
 const ProfileHeader = styled.div`
   display: flex;
   align-items: center;
@@ -52,6 +89,12 @@ const ProfileHeader = styled.div`
   }
 `;
 
+/**
+ * 头像区域样式
+ * 
+ * 设置右侧外边距和垂直布局
+ * 在移动设备上调整为居中显示
+ */
 const AvatarSection = styled.div`
   margin-right: 24px;
   display: flex;
@@ -65,19 +108,44 @@ const AvatarSection = styled.div`
   }
 `;
 
+/**
+ * 用户信息样式
+ * 
+ * 使用flex: 1使其占据剩余空间
+ */
 const UserInfo = styled.div`
   flex: 1;
 `;
 
+/**
+ * 表单区域样式
+ * 
+ * 设置底部外边距
+ * 用于分隔不同的表单部分
+ */
 const FormSection = styled.div`
   margin-bottom: 24px;
 `;
 
+/**
+ * 用户设置页面组件
+ * 
+ * 提供用户配置个人资料、安全、通知和隐私设置的界面
+ * 
+ * @returns {JSX.Element} 用户设置页面组件
+ */
 const UserSettingsPage = () => {
+  // 当前活动标签页状态
   const [activeTab, setActiveTab] = useState('profile');
+  // 创建表单实例
   const [form] = Form.useForm();
   
-  // 示例用户数据
+  /**
+   * 示例用户数据
+   * 
+   * 实际应用中应该从API获取
+   * 包含用户名、邮箱、姓名等基本信息和通知设置
+   */
   const userData = {
     username: 'user123',
     email: 'user@example.com',
@@ -96,20 +164,36 @@ const UserSettingsPage = () => {
   // 初始化表单数据
   form.setFieldsValue(userData);
   
-  // 处理表单提交
+  /**
+   * 处理表单提交
+   * 
+   * 保存用户修改的个人资料
+   * 
+   * @param {Object} values - 表单提交的值
+   */
   const handleSubmit = (values) => {
     console.log('提交的表单数据:', values);
     message.success('个人资料已更新');
   };
   
-  // 处理头像上传
+  /**
+   * 处理头像上传
+   * 
+   * 当头像上传完成时显示成功消息
+   * 
+   * @param {Object} info - 上传文件的信息
+   */
   const handleAvatarChange = (info) => {
     if (info.file.status === 'done') {
       message.success('头像上传成功');
     }
   };
   
-  // 头像上传按钮
+  /**
+   * 头像上传按钮
+   * 
+   * 定义上传按钮的外观
+   */
   const uploadButton = (
     <div>
       <UploadOutlined />
@@ -119,7 +203,8 @@ const UserSettingsPage = () => {
   
   return (
     <SettingsContainer>
-      <Breadcrumb style={{ marginBottom: 16 }}>
+      {/* 面包屑导航 */}
+      {/*<Breadcrumb style={{ marginBottom: 16 }}>
         <Breadcrumb.Item href="/">
           <HomeOutlined />
           <span>首页</span>
@@ -128,16 +213,19 @@ const UserSettingsPage = () => {
           <SettingOutlined />
           <span>用户设置</span>
         </Breadcrumb.Item>
-      </Breadcrumb>
+      </Breadcrumb>*/}
       
+      {/* 页面标题 */}
       <Title level={2}>用户设置</Title>
       
+      {/* 设置标签页 */}
       <Tabs 
         activeKey={activeTab} 
         onChange={setActiveTab}
         tabPosition="left"
         style={{ minHeight: 500 }}
       >
+        {/* 个人资料标签页 */}
         <TabPane 
           tab={
             <span>
@@ -153,6 +241,7 @@ const UserSettingsPage = () => {
             
             <Divider />
             
+            {/* 个人资料头部：头像和基本信息 */}
             <ProfileHeader>
               <AvatarSection>
                 <Avatar size={100} icon={<UserOutlined />} />
@@ -177,11 +266,13 @@ const UserSettingsPage = () => {
               </UserInfo>
             </ProfileHeader>
             
+            {/* 个人资料表单 */}
             <Form
               form={form}
               layout="vertical"
               onFinish={handleSubmit}
             >
+              {/* 基本信息表单区域 */}
               <FormSection>
                 <Title level={5}>基本信息</Title>
                 
@@ -212,6 +303,7 @@ const UserSettingsPage = () => {
                 </Form.Item>
               </FormSection>
               
+              {/* 偏好设置表单区域 */}
               <FormSection>
                 <Title level={5}>偏好设置</Title>
                 
@@ -226,6 +318,7 @@ const UserSettingsPage = () => {
                 </Form.Item>
               </FormSection>
               
+              {/* 提交按钮 */}
               <Form.Item>
                 <Button type="primary" htmlType="submit">
                   保存更改
@@ -235,6 +328,7 @@ const UserSettingsPage = () => {
           </ProfileCard>
         </TabPane>
         
+        {/* 安全设置标签页 */}
         <TabPane 
           tab={
             <span>
@@ -250,9 +344,11 @@ const UserSettingsPage = () => {
             
             <Divider />
             
+            {/* 安全设置表单 */}
             <Form
               layout="vertical"
             >
+              {/* 修改密码表单区域 */}
               <FormSection>
                 <Title level={5}>修改密码</Title>
                 
@@ -300,6 +396,7 @@ const UserSettingsPage = () => {
                 </Form.Item>
               </FormSection>
               
+              {/* 两步验证表单区域 */}
               <FormSection>
                 <Title level={5}>两步验证</Title>
                 
@@ -316,6 +413,7 @@ const UserSettingsPage = () => {
           </ProfileCard>
         </TabPane>
         
+        {/* 通知设置标签页 */}
         <TabPane 
           tab={
             <span>
@@ -331,10 +429,12 @@ const UserSettingsPage = () => {
             
             <Divider />
             
+            {/* 通知设置表单 */}
             <Form
               layout="vertical"
               initialValues={userData.notifications}
             >
+              {/* 通知方式表单区域 */}
               <FormSection>
                 <Title level={5}>通知方式</Title>
                 
@@ -355,6 +455,7 @@ const UserSettingsPage = () => {
                 </Form.Item>
               </FormSection>
               
+              {/* 通知类型表单区域 */}
               <FormSection>
                 <Title level={5}>通知类型</Title>
                 
@@ -383,6 +484,7 @@ const UserSettingsPage = () => {
                 </Form.Item>
               </FormSection>
               
+              {/* 提交按钮 */}
               <Form.Item>
                 <Button type="primary">
                   保存设置
@@ -392,6 +494,7 @@ const UserSettingsPage = () => {
           </ProfileCard>
         </TabPane>
         
+        {/* 隐私设置标签页 */}
         <TabPane 
           tab={
             <span>
@@ -408,4 +511,4 @@ const UserSettingsPage = () => {
   );
 };
 
-export default UserSettingsPage; 
+export default UserSettingsPage;

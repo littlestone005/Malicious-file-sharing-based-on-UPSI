@@ -1,6 +1,22 @@
+/**
+ * 详细扫描结果组件
+ * 
+ * 这个组件展示单个文件的详细扫描结果，包括：
+ * 1. 扫描状态摘要（安全、感染或可疑）
+ * 2. 威胁等级和隐私保护信息
+ * 3. 文件详细属性
+ * 4. 建议操作
+ * 5. 报告导出功能
+ * 
+ * 组件根据扫描结果动态调整显示内容和视觉样式
+ */
+
 import React, { useState } from 'react';
+// 导入样式组件库
 import styled from 'styled-components';
+// 导入Ant Design组件
 import { Card, Table, Tag, Button, Collapse, Typography, Tooltip, Progress, Divider } from 'antd';
+// 导入Ant Design图标
 import { 
   CheckCircleOutlined, 
   CloseCircleOutlined, 
@@ -11,21 +27,41 @@ import {
   WarningOutlined
 } from '@ant-design/icons';
 
+// 从Typography组件中解构出需要的子组件
 const { Title, Text, Paragraph } = Typography;
+// 从Collapse组件中解构出Panel子组件
 const { Panel } = Collapse;
 
+/**
+ * 结果卡片样式
+ * 
+ * 设置底部外边距、圆角和阴影效果
+ * 增强卡片的视觉层次感
+ */
 const ResultCard = styled(Card)`
   margin-bottom: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 `;
 
+/**
+ * 状态标签样式
+ * 
+ * 自定义Tag组件的字体大小、内边距和圆角
+ * 使状态标签更加突出
+ */
 const StatusTag = styled(Tag)`
   font-size: 14px;
   padding: 4px 8px;
   border-radius: 4px;
 `;
 
+/**
+ * 结果头部样式
+ * 
+ * 使用flex布局使标题和状态标签分别位于左右两侧
+ * 设置底部外边距
+ */
 const ResultHeader = styled.div`
   display: flex;
   align-items: center;
@@ -33,6 +69,12 @@ const ResultHeader = styled.div`
   margin-bottom: 20px;
 `;
 
+/**
+ * 结果摘要容器样式
+ * 
+ * 使用flex布局和flex-wrap实现响应式布局
+ * 设置间距和底部外边距
+ */
 const ResultSummary = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -40,6 +82,13 @@ const ResultSummary = styled.div`
   margin-bottom: 20px;
 `;
 
+/**
+ * 摘要项目样式
+ * 
+ * 设置flex布局、最小宽度、内边距和背景色
+ * 使用flex: 1确保项目平均分配空间
+ * 居中对齐内容
+ */
 const SummaryItem = styled.div`
   flex: 1;
   min-width: 200px;
@@ -52,12 +101,24 @@ const SummaryItem = styled.div`
   text-align: center;
 `;
 
+/**
+ * 图标包装器样式
+ * 
+ * 设置图标大小、底部外边距和颜色
+ * 通过props.color接收不同的颜色值
+ */
 const IconWrapper = styled.div`
   font-size: 24px;
   margin-bottom: 10px;
   color: ${props => props.color || 'var(--color-primary)'};
 `;
 
+/**
+ * 隐私信息样式
+ * 
+ * 设置背景色、左侧边框、内边距、外边距和圆角
+ * 用于突出显示隐私保护相关信息
+ */
 const PrivacyInfo = styled.div`
   background-color: rgba(24, 144, 255, 0.1);
   border-left: 4px solid var(--color-primary);
@@ -66,7 +127,16 @@ const PrivacyInfo = styled.div`
   border-radius: 4px;
 `;
 
+/**
+ * 详细扫描结果组件
+ * 
+ * @param {Object} props - 组件属性
+ * @param {Object} props.scanResults - 扫描结果数据
+ * @param {string} props.fileName - 文件名称
+ * @returns {JSX.Element} 详细扫描结果组件
+ */
 const DetailedResults = ({ scanResults, fileName }) => {
+  // 当前活动标签页状态
   const [activeTab, setActiveTab] = useState('summary');
   
   // 示例数据 - 实际应用中应该从props接收
@@ -86,7 +156,12 @@ const DetailedResults = ({ scanResults, fileName }) => {
     recommendations: [],
   };
   
-  // 根据扫描状态确定颜色和图标
+  /**
+   * 根据扫描状态获取对应的颜色、图标和文本
+   * 
+   * @param {string} status - 扫描状态：'clean', 'infected', 'suspicious'
+   * @returns {Object} 包含颜色、图标和文本的对象
+   */
   const getStatusInfo = (status) => {
     switch(status) {
       case 'clean':
@@ -116,24 +191,35 @@ const DetailedResults = ({ scanResults, fileName }) => {
     }
   };
   
+  // 获取当前扫描状态的信息
   const statusInfo = getStatusInfo(results.status);
   
-  // 威胁等级对应的颜色
+  /**
+   * 威胁等级对应的颜色映射
+   * 从无威胁（绿色）到严重威胁（深红色）
+   */
   const threatLevelColors = {
-    none: '#52c41a',
-    low: '#faad14',
-    medium: '#fa8c16',
-    high: '#f5222d',
-    critical: '#a8071a'
+    none: '#52c41a',    // 绿色 - 无威胁
+    low: '#faad14',     // 黄色 - 低威胁
+    medium: '#fa8c16',  // 橙色 - 中等威胁
+    high: '#f5222d',    // 红色 - 高威胁
+    critical: '#a8071a' // 深红色 - 严重威胁
   };
   
-  // 威胁等级进度条
+  /**
+   * 获取威胁等级对应的进度条百分比
+   * 
+   * @param {string} level - 威胁等级
+   * @returns {number} 进度条百分比值
+   */
   const getThreatProgress = (level) => {
     const levels = { none: 0, low: 25, medium: 50, high: 75, critical: 100 };
     return levels[level] || 0;
   };
   
-  // 文件详情表格列
+  /**
+   * 文件详情表格列配置
+   */
   const fileDetailsColumns = [
     {
       title: '属性',
@@ -148,7 +234,9 @@ const DetailedResults = ({ scanResults, fileName }) => {
     },
   ];
   
-  // 文件详情数据
+  /**
+   * 文件详情表格数据
+   */
   const fileDetailsData = [
     { key: '1', property: '文件名', value: results.fileName },
     { key: '2', property: '文件大小', value: results.fileSize },
@@ -158,7 +246,11 @@ const DetailedResults = ({ scanResults, fileName }) => {
     { key: '6', property: '检测方法', value: results.detectionMethod },
   ];
   
-  // 获取建议列表
+  /**
+   * 根据扫描状态获取建议操作列表
+   * 
+   * @returns {Array} 建议操作文本数组
+   */
   const getRecommendations = () => {
     if (results.status === 'clean') {
       return [
@@ -184,6 +276,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
   return (
     <div>
       <ResultCard>
+        {/* 结果头部：标题和状态标签 */}
         <ResultHeader>
           <Title level={4}>扫描结果</Title>
           <StatusTag 
@@ -194,7 +287,9 @@ const DetailedResults = ({ scanResults, fileName }) => {
           </StatusTag>
         </ResultHeader>
         
+        {/* 结果摘要：威胁等级、隐私保护和检测结果 */}
         <ResultSummary>
+          {/* 威胁等级项 */}
           <SummaryItem>
             <IconWrapper color={threatLevelColors[results.threatLevel]}>
               <SafetyOutlined />
@@ -210,6 +305,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
             <Text>{results.threatLevel === 'none' ? '无威胁' : results.threatLevel}</Text>
           </SummaryItem>
           
+          {/* 隐私保护项 */}
           <SummaryItem>
             <IconWrapper color="var(--color-primary)">
               <LockOutlined />
@@ -218,6 +314,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
             <Text>{results.privacyProtected ? '已启用' : '未启用'}</Text>
           </SummaryItem>
           
+          {/* 检测结果项 */}
           <SummaryItem>
             <IconWrapper color={results.status === 'clean' ? '#52c41a' : '#f5222d'}>
               <FileProtectOutlined />
@@ -227,6 +324,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
           </SummaryItem>
         </ResultSummary>
         
+        {/* 隐私保护信息区域 */}
         <PrivacyInfo>
           <Text strong><InfoCircleOutlined /> 隐私保护信息</Text>
           <Paragraph style={{ marginTop: '8px' }}>
@@ -237,7 +335,9 @@ const DetailedResults = ({ scanResults, fileName }) => {
           </Paragraph>
         </PrivacyInfo>
         
+        {/* 可折叠面板：文件详情和建议操作 */}
         <Collapse defaultActiveKey={['1']}>
+          {/* 文件详情面板 */}
           <Panel header="文件详情" key="1">
             <Table 
               columns={fileDetailsColumns} 
@@ -247,6 +347,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
             />
           </Panel>
           
+          {/* 建议操作面板 */}
           <Panel header="建议操作" key="2">
             <ul>
               {getRecommendations().map((rec, index) => (
@@ -258,6 +359,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
         
         <Divider />
         
+        {/* 底部按钮区域 */}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button type="default">
             导出报告

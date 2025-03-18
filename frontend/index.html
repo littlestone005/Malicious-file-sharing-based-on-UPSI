@@ -2,13 +2,44 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/shield.svg" />
+    
+    <!--
+      favicon设置
+      使用png格式的盾牌图标作为网站图标
+    -->
+    <link rel="icon" type="image/png" href="/shield.png" />
+    
+    <!--
+      视口设置
+      确保网站在移动设备上正确显示
+      width=device-width: 视口宽度等于设备宽度
+      initial-scale=1.0: 初始缩放比例为1.0（不缩放）
+    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>隐私保护恶意软件检测</title>
-    <meta name="description" content="使用PSI协议进行安全文件扫描，保护您的隐私" />
+    
+    <!--
+      页面标题
+    -->
+    <title>隐私保护恶意软件检测方案</title>
+    
+    <!--
+      页面描述
+      用于搜索引擎结果和社交媒体分享
+      简明扼要地描述了应用的主要功能和目标用户
+    -->
+    <meta name="description" content="使用PSI协议进行安全文件扫描，为个人和企业用户提供隐私保护的恶意软件检测服务" />
   </head>
   <body>
+    <!--
+      创建根容器div
+      React应用将挂载到该容器中
+      整个应用的UI将在这个div内渲染
+    -->
     <div id="root"></div>
+    
+    <!--
+      主JavaScript入口点,加载React应用
+    -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html> 

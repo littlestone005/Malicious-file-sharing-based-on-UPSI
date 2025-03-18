@@ -1,50 +1,98 @@
+/**
+ * 全局CSS样式文件
+ * 
+ * 这个文件定义了应用的全局样式，包括：
+ * 1. CSS变量（自定义属性）
+ * 2. 基本元素样式重置
+ * 3. 全局排版和颜色
+ * 4. 通用工具类
+ * 5. 动画效果
+ */
+
+/* 
+ * CSS变量定义
+ * 
+ * 使用CSS自定义属性（变量）定义应用的颜色方案
+ * 这样可以在一处定义，多处使用，便于主题管理和更改
+ */
 :root {
-  --color-primary: #1a5fb4;
-  --color-secondary: #3584e4;
-  --color-success: #2ec27e;
-  --color-warning: #f5c211;
-  --color-danger: #e01b24;
-  --color-background: #1c1c1c;
-  --color-text: #ffffff;
-  --color-text-secondary: #c0bfbc;
-  --color-border: #5e5c64;
+  --color-primary: #1a5fb4;    /* 主色调 - 深蓝色，用于主要按钮和强调 */
+  --color-secondary: #3584e4;  /* 次要色调 - 亮蓝色，用于链接和次要元素 */
+  --color-success: #2ec27e;    /* 成功状态颜色 - 绿色 */
+  --color-warning: #f5c211;    /* 警告状态颜色 - 黄色 */
+  --color-danger: #e01b24;     /* 危险/错误状态颜色 - 红色 */
+  --color-background: #1c1c1c; /* 背景色 - 深灰色，适合暗色主题 */
+  --color-text: #ffffff;       /* 主文本颜色 - 白色 */
+  --color-text-secondary: #c0bfbc; /* 次要文本颜色 - 浅灰色 */
+  --color-border: #5e5c64;     /* 边框颜色 - 中灰色 */
 }
 
+/* 
+ * 全局样式重置
+ * 
+ * 移除所有元素的默认外边距和内边距
+ * 使用border-box盒模型，使元素的宽度包含padding和border
+ */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* 
+ * 基本页面样式
+ * 
+ * 设置字体族、平滑渲染、背景色和文本颜色
+ */
 body {
+  /* 系统字体栈，优先使用用户系统上可用的字体 */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
+  /* 字体平滑渲染，提高可读性 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* 使用CSS变量设置背景色和文本颜色 */
   background-color: var(--color-background);
   color: var(--color-text);
 }
 
+/* 
+ * 链接样式
+ * 
+ * 设置链接的颜色和去除下划线
+ */
 a {
   color: var(--color-secondary);
   text-decoration: none;
 }
 
+/* 链接悬停状态 */
 a:hover {
-  text-decoration: underline;
+  text-decoration: underline; /* 悬停时显示下划线 */
 }
 
+/* 
+ * 容器类
+ * 
+ * 用于限制内容宽度并居中显示
+ */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+  max-width: 1200px; /* 最大宽度限制 */
+  margin: 0 auto;    /* 水平居中 */
+  padding: 0 20px;   /* 水平内边距 */
 }
 
+/* 
+ * 文本对齐工具类
+ */
 .text-center {
   text-align: center;
 }
 
+/* 
+ * 外边距工具类
+ */
 .mt-20 {
   margin-top: 20px;
 }
@@ -53,7 +101,11 @@ a:hover {
   margin-bottom: 20px;
 }
 
-/* Animation for encryption effect */
+/* 
+ * 加密效果动画
+ * 
+ * 用于文件上传时的视觉反馈，模拟加密过程
+ */
 @keyframes encryptEffect {
   0% {
     opacity: 1;
@@ -69,6 +121,11 @@ a:hover {
   }
 }
 
+/* 
+ * 应用加密动画的类
+ * 
+ * 将动画应用到需要展示加密效果的元素
+ */
 .encrypt-animation {
   animation: encryptEffect 1.5s forwards;
 } 
