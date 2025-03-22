@@ -194,7 +194,12 @@ const Header = () => {
     {
       key: '/about',
       icon: <InfoCircleOutlined />,
-      label: <Link to="/about">关于</Link>,
+      label: <Link to="/about">关于我们</Link>,
+    },
+    {
+      key: '/test-connection',
+      icon: <SettingOutlined />,
+      label: <Link to="/test-connection">测试连接</Link>,
     },
   ];
 
@@ -257,4 +262,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export default Header;

@@ -202,3 +202,57 @@ const LoadingAnimation = ({ text = "正在处理文件，保护您的隐私..." 
 };
 
 export default LoadingAnimation; 
+
+const ProgressContainer = styled.div`
+  width: 300px;
+  margin: 20px 0;
+  position: relative;
+
+  .ant-progress-inner {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .ant-progress-bg {
+    height: 20px !important;
+    background: linear-gradient(90deg, var(--color-primary), #1890ff);
+    animation: progressGlow 2s ease-in-out infinite;
+  }
+`;
+
+const ProgressText = styled.div`
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(255, 255, 255, 0.3);
+`;
+
+const progressGlow = keyframes`
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+`;
+
+return (
+  <AnimationContainer>
+    <LockIcon>
+      <SafetyCertificateOutlined />
+    </LockIcon>
+
+    <ProgressContainer>
+      <Progress
+        percent={75}
+        strokeColor="transparent"
+        showInfo={false}
+        status="active"
+      />
+      <ProgressText>75%</ProgressText>
+    </ProgressContainer>
+
+    <AnimationText>{text}</AnimationText>
+  </AnimationContainer>
+);

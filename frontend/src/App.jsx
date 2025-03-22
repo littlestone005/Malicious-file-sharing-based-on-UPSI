@@ -28,6 +28,7 @@ import ResultsPage from './pages/ResultsPage'
 import AboutPage from './pages/AboutPage'
 import UserSettingsPage from './pages/UserSettingsPage'
 import HistoryPage from './pages/HistoryPage'
+import TestConnection from './pages/TestConnection';
 
 /**
  * 创建用户上下文
@@ -171,7 +172,8 @@ function App() {
               <Route path="/scan" element={<ScanPage setScanResults={setScanResults} />} />               {/* 扫描页面路由，传入setScanResults函数以便更新扫描结果 */}
               <Route path="/settings" element={<UserSettingsPage />} />                     {/* 用户设置页面路由 */}
               <Route path="/history" element={<HistoryPage />} />                           {/* 历史记录页面路由 */}
-              <Route path="/results/:scanId" element={<ResultsPage scanResults={scanResults} />} />       {/* 结果页面路由，接收scanId参数并传入scanResults */}
+              <Route path="/results/:scanId" element={<ResultsPage scanResults={scanResults} />} />
+              <Route path="/test-connection" element={<TestConnection />} />       {/* 结果页面路由，接收scanId参数并传入scanResults */}
               <Route path="/about" element={<AboutPage />} />           {/* 关于页面路由 */}
             </Routes>
             
@@ -184,4 +186,4 @@ function App() {
 }
 
 // 导出App组件，使其可以在main.jsx中使用
-export default App 
+export default App
