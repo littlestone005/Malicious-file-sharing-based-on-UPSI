@@ -1,7 +1,9 @@
 from typing import List, Optional
 from fastapi import HTTPException
+from datetime import datetime
 from backend.schemas.detection import DetectionRequest, DetectionResponse
 from backend.psi_wrapper import get_psi_wrapper
+from backend.core.config import settings
 
 async def detect_malware(hashes: list, use_psi: bool) -> DetectionResponse:
     psi = get_psi_wrapper()
@@ -19,10 +21,7 @@ async def detect_malware(hashes: list, use_psi: bool) -> DetectionResponse:
         return DetectionResponse(
             malicious_hashes=malicious_hashes,
             proof=None
-        ), DetectionResponse
-from backend.psi_wrapper import get_psi_wrapper
-from backend.config import settings
-from datetime import datetime
+        )
 
 async def analyze_hashes(request: DetectionRequest):
     try:

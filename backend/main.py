@@ -9,7 +9,7 @@ load_dotenv()
 
 from backend.models.base import Base
 from backend.database.session import engine
-from backend.config import settings
+from backend.core.config import settings
 from backend.database.init_db import init_db
 
 # 创建数据库表

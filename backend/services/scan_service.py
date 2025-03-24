@@ -8,7 +8,7 @@ import json
 from backend.models.scan_record import ScanRecord
 from backend.models.known_threat import KnownThreat
 from backend.utils.hashing import calculate_file_hash
-from backend.config import settings
+from backend.core.config import settings
 from backend.psi_wrapper import get_psi_wrapper
 
 async def save_upload_file(upload_file: UploadFile) -> str:

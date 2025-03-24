@@ -1,16 +1,25 @@
+# API框架
 fastapi==0.95.0
 uvicorn==0.21.1
 pydantic==1.10.7
-python-dotenv==1.0.0
-sqlalchemy==2.0.9
 python-jose==3.3.0
-passlib==1.7.4
 python-multipart==0.0.6
-aiofiles==23.1.0
-bcrypt==4.0.1
-pytest==7.3.1
-httpx==0.24.0
-email-validator==2.0.0
+python-dotenv==1.0.0
+
+# 数据库
+sqlalchemy==2.0.9
 alembic==1.10.4
-psycopg2-binary==2.9.6
-cryptography==40.0.2 
+psycopg2-binary==2.9.6  # PostgreSQL驱动（可选）
+
+# 安全
+passlib==1.7.4
+bcrypt==4.0.1
+cryptography==40.0.2
+email-validator==2.0.0
+
+# 文件处理
+aiofiles==23.1.0
+
+# 测试
+pytest==7.3.1
+httpx==0.24.0 

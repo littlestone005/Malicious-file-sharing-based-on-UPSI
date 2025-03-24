@@ -9,7 +9,7 @@ from backend.core.security import create_access_token
 from backend.schemas.user import UserCreate, UserResponse, TokenResponse
 from backend.services.user_service import authenticate_user, create_user, get_user_by_username
 from backend.database.session import get_db
-from backend.config import settings
+from backend.core.config import settings
 
 router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
 
