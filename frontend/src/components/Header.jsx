@@ -141,9 +141,12 @@ const Header = () => {
   /**
    * 处理用户登出
    * 
-   * 清除用户状态，返回未登录状态
+   * 清除本地存储的用户信息和token
+   * 清除用户状态
    */
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
   

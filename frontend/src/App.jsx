@@ -30,6 +30,9 @@ import UserSettingsPage from './pages/UserSettingsPage'
 import HistoryPage from './pages/HistoryPage'
 import TestConnection from './pages/TestConnection';
 
+// 导入API服务
+import { authAPI } from './utils/api';
+
 /**
  * 创建用户上下文
  * 
@@ -86,18 +89,16 @@ const LoadingContainer = styled.div`
 /**
  * 本地存储键名
  */
-const USER_STORAGE_KEY = 'upsi_user_data';
+const USER_STORAGE_KEY = 'user';
+const TOKEN_STORAGE_KEY = 'token';
 
 /**
  * 应用主组件
  * 管理全局状态并构建应用的基本结构
  */
 function App() {
-  // 用户状态，存储当前登录用户的信息
   const [user, setUser] = useState(null);
-  // 授权加载状态，控制初始加载时的UI显示
   const [authLoading, setAuthLoading] = useState(true);
-  // 扫描结果状态，存储最近一次扫描的结果
   const [scanResults, setScanResults] = useState(null);
 
   /**
@@ -108,11 +109,10 @@ function App() {
   const handleSetUser = (userData) => {
     setUser(userData);
     if (userData) {
-      // 用户登录，保存用户数据到本地存储
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
     } else {
-      // 用户登出，从本地存储中移除用户数据
       localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
   };
 
@@ -120,34 +120,37 @@ function App() {
    * 从本地存储恢复用户会话
    * 
    * 在组件挂载时执行一次，尝试从localStorage恢复用户状态
+   * 并验证token的有效性
    */
   useEffect(() => {
-    const restoreUserSession = () => {
-      // 从本地存储中获取用户数据
-      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
-      
+    const restoreUserSession = async () => {
       try {
-        // 如果存在数据且可以解析，则恢复用户状态
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
+        // 从本地存储中获取token和用户数据
+        const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+        const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+        
+        if (token && storedUser) {
+          try {
+            // 验证token并获取最新的用户信息
+            const userData = await authAPI.getCurrentUser();
+            setUser(userData);
+          } catch (error) {
+            // token无效或过期，清除本地存储
+            console.error('Token validation failed:', error);
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            localStorage.removeItem(USER_STORAGE_KEY);
+          }
         }
       } catch (error) {
         console.error('Failed to restore user session:', error);
-        // 如果解析失败，清除可能损坏的数据
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
         localStorage.removeItem(USER_STORAGE_KEY);
       } finally {
-        // 无论成功与否，都将加载状态设置为false
         setAuthLoading(false);
       }
     };
 
-    // 短暂延迟以确保页面过渡平滑
-    const timer = setTimeout(() => {
-      restoreUserSession();
-    }, 300);
-
-    return () => clearTimeout(timer);
+    restoreUserSession();
   }, []);
 
   // 如果认证状态正在加载，显示加载界面

@@ -1,7 +1,13 @@
 from pydantic import BaseSettings
+import os
+from dotenv import load_dotenv
 import backend.psi_wrapper as psi_wrapper
 
+# 加载.env文件
+load_dotenv()
+
 class Settings(BaseSettings):
+    # PSI配置
     server_key: str = "your-secret-key-here"
     malware_signatures: list[str] = [
         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -11,9 +17,26 @@ class Settings(BaseSettings):
         "2c624232cdd221771294dfbb310aca000a0df6ac8b66b696d90ef06fdefb64a3"
     ]
     server_preprocessed: str = "server_preprocessed_data_placeholder"
+    
+    # 数据库配置
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./data.db")
+    
+    # API配置
+    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "Malicious File Detection API"
+    VERSION: str = "0.1.0"
+    
+    # 安全配置
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # 上传配置
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
 
 settings = Settings()
-from backend.psi_wrapper import get_psi_wrapper
 
+# 预处理服务器数据
+from backend.psi_wrapper import get_psi_wrapper
 wrapper = get_psi_wrapper()
 SERVER_PREPROCESSED = wrapper.server_preprocess(settings.malware_signatures, settings.server_key)

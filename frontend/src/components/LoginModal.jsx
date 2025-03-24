@@ -18,6 +18,8 @@ import { Modal, Tabs, Form, Input, Button, Typography, Radio, message } from 'an
 import { UserOutlined, LockOutlined, BankOutlined, MailOutlined } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
+// 导入API模块
+import { authAPI } from '../utils/api';
 
 // 从Typography组件中解构出需要的子组件
 const { Title, Text } = Typography;
@@ -49,28 +51,40 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
   const [loginForm] = Form.useForm();
   // 创建注册表单实例
   const [registerForm] = Form.useForm();
+  // 添加加载状态
+  const [loading, setLoading] = useState(false);
 
   /**
    * 处理登录表单提交
    * 
    * @param {Object} values - 表单值，包含username和password
    */
-  const handleLogin = (values) => {
-    // 在实际应用中，这里会调用API进行身份验证
-    console.log('Login values:', { ...values, userType });
-    
-    // 模拟登录成功
-    message.success(`${userType === 'personal' ? '个人' : '企业'}用户登录成功！`);
-    
-    // 将用户数据传递给父组件
-    onLogin({
-      username: values.username,
-      userType: userType,
-      // 在实际应用中，这里会包含从服务器返回的更多用户数据
-    });
-    
-    // 关闭模态框
-    onClose();
+  const handleLogin = async (values) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.login(values.username, values.password);
+      
+      // 保存token和用户信息
+      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('user', JSON.stringify({
+        id: response.user_id,
+        username: response.username,
+        userType: userType
+      }));
+      
+      message.success('登录成功！');
+      onLogin({
+        id: response.user_id,
+        username: response.username,
+        userType: userType
+      });
+      onClose();
+    } catch (error) {
+      console.error('Login error:', error);  // 添加错误日志
+      message.error(error.message || '登录失败，请重试！');
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
@@ -78,15 +92,35 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
    * 
    * @param {Object} values - 表单值，包含username、email、password等
    */
-  const handleRegister = (values) => {
-    // 在实际应用中，这里会调用API进行用户注册
-    console.log('Register values:', { ...values, userType });
-    
-    // 模拟注册成功
-    message.success(`${userType === 'personal' ? '个人' : '企业'}账户注册成功！`);
-    
-    // 关闭模态框
-    onClose();
+  const handleRegister = async (values) => {
+    try {
+      setLoading(true);
+      // 检查用户名是否可用
+      const { available } = await authAPI.checkUsername(values.username);
+      if (!available) {
+        message.error('用户名已被使用！');
+        return;
+      }
+
+      // 注册新用户
+      const userData = {
+        username: values.username,
+        email: values.email,
+        password: values.password
+      };
+      await authAPI.register(userData);
+      
+      message.success('注册成功！请登录');
+      // 切换到登录标签
+      loginForm.setFieldsValue({
+        username: values.username,
+        password: values.password
+      });
+    } catch (error) {
+      message.error(error.message || '注册失败，请重试！');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -134,6 +168,7 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
                 prefix={userType === 'personal' ? <UserOutlined /> : <BankOutlined />} 
                 // 根据用户类型显示不同的占位符文本
                 placeholder={userType === 'personal' ? "用户名" : "企业账号"}
+                disabled={loading}
               />
             </Form.Item>
             
@@ -145,12 +180,13 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
               <Input.Password 
                 prefix={<LockOutlined />} 
                 placeholder="密码"
+                disabled={loading}
               />
             </Form.Item>
             
             {/* 登录按钮 */}
             <Form.Item>
-              <Button type="primary" htmlType="submit" block>
+              <Button type="primary" htmlType="submit" block loading={loading}>
                 登录
               </Button>
             </Form.Item>
@@ -168,13 +204,18 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
             {/* 用户名/企业名称输入框 */}
             <Form.Item
               name="username"
-              rules={[{ required: true, message: '请输入用户名！' }]} // 验证规则：必填
+              rules={[
+                { required: true, message: '请输入用户名！' },
+                { min: 3, message: '用户名至少3个字符！' },
+                { max: 20, message: '用户名最多20个字符！' }
+              ]}
             >
               <Input 
                 // 根据用户类型显示不同的图标
                 prefix={userType === 'personal' ? <UserOutlined /> : <BankOutlined />} 
                 // 根据用户类型显示不同的占位符文本
                 placeholder={userType === 'personal' ? "用户名" : "企业名称"}
+                disabled={loading}
               />
             </Form.Item>
             
@@ -182,24 +223,29 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
             <Form.Item
               name="email"
               rules={[
-                { required: true, message: '请输入邮箱！' }, // 验证规则：必填
-                { type: 'email', message: '请输入有效的邮箱地址！' } // 验证规则：邮箱格式
+                { required: true, message: '请输入邮箱！' },
+                { type: 'email', message: '请输入有效的邮箱地址！' }
               ]}
             >
               <Input 
                 prefix={<MailOutlined />} 
                 placeholder="邮箱"
+                disabled={loading}
               />
             </Form.Item>
             
             {/* 密码输入框 */}
             <Form.Item
               name="password"
-              rules={[{ required: true, message: '请输入密码！' }]} // 验证规则：必填
+              rules={[
+                { required: true, message: '请输入密码！' },
+                { min: 6, message: '密码至少6个字符！' }
+              ]}
             >
               <Input.Password 
                 prefix={<LockOutlined />} 
                 placeholder="密码"
+                disabled={loading}
               />
             </Form.Item>
             
@@ -223,12 +269,13 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
               <Input.Password 
                 prefix={<LockOutlined />} 
                 placeholder="确认密码"
+                disabled={loading}
               />
             </Form.Item>
             
             {/* 注册按钮 */}
             <Form.Item>
-              <Button type="primary" htmlType="submit" block>
+              <Button type="primary" htmlType="submit" block loading={loading}>
                 注册
               </Button>
             </Form.Item>

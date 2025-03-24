@@ -16,17 +16,11 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 # Source files
 set(SOURCES
     src/psi.cpp
-    src/oprf.cpp
-    src/zkp.cpp
-    src/utils.cpp
 )
 
 # Header files
 set(HEADERS
     include/psi.h
-    include/oprf.h
-    include/zkp.h
-    include/utils.h
 )
 
 # Create shared library
@@ -37,6 +31,10 @@ target_link_libraries(psi_algorithm ${OPENSSL_LIBRARIES})
 set_target_properties(psi_algorithm PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
+
+# Create test executable
+add_executable(test_psi src/test_psi.cpp)
+target_link_libraries(test_psi psi_algorithm ${OPENSSL_LIBRARIES})
 
 # Install targets
 install(TARGETS psi_algorithm
