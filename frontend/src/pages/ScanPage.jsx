@@ -11,18 +11,13 @@
  */
 
 import { useState, useContext, useEffect } from 'react';
-// 导入Ant Design组件
-import { Typography, Card, Steps, Button, Badge, Alert, Spin } from 'antd';
-// 导入路由导航钩子
-import { useNavigate } from 'react-router-dom';
-// 导入Ant Design图标
+import { Typography, Card, Steps, Button, Badge, Alert, Spin } from 'antd';// 导入Ant Design组件
+import { useNavigate } from 'react-router-dom';// 导入路由导航钩子
 import { FileAddOutlined, ScanOutlined, SafetyCertificateOutlined, BankOutlined, LoginOutlined } from '@ant-design/icons';
-// 导入样式组件库
-import styled from 'styled-components';
-// 导入文件上传器组件
-import FileUploader from '../components/FileUploader';
-// 导入用户上下文
-import { UserContext } from '../App';
+import styled from 'styled-components';// 导入样式组件库
+import FileUploader from '../components/FileUploader';// 导入文件上传器组件
+import { UserContext } from '../App';// 导入用户上下文
+import LoginModal from '../components/LoginModal';
 
 // 从Typography组件中解构出需要的子组件
 const { Title, Paragraph } = Typography;
@@ -102,7 +97,7 @@ const ScanPage = ({ setScanResults }) => {
   // 路由导航钩子
   const navigate = useNavigate();
   // 获取用户上下文
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
   // 当前步骤状态
   const [currentStep, setCurrentStep] = useState(0);
   // 加载状态
@@ -110,6 +105,7 @@ const ScanPage = ({ setScanResults }) => {
   // 页面初始化状态
   const [initializing, setInitializing] = useState(true);
   
+  const [loginModalVisible, setLoginModalVisible] = useState(false);
   // 判断是否为企业用户
   const isEnterpriseUser = user?.userType === 'enterprise';
   // 判断用户是否已登录
@@ -128,11 +124,20 @@ const ScanPage = ({ setScanResults }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  /**
-   * 导航到登录页面
+ /**
+   * 处理登录按钮点击，显示登录模态框
    */
-  const goToLogin = () => {
-    navigate('/login', { state: { from: '/scan' } });
+  const handleLoginClick = () => {
+    setLoginModalVisible(true);
+  };
+
+  /**
+   * 处理用户登录
+   * 
+   * @param {Object} userData - 登录后的用户数据
+   */
+  const handleLogin = (userData) => {
+    setUser(userData);
   };
 
   /**
@@ -172,6 +177,7 @@ const ScanPage = ({ setScanResults }) => {
           isLoading={isLoading}
           setIsLoading={setIsLoading}
           isDisabled={!isLoggedIn}
+          onLoginClick={handleLoginClick}
         />
       ),
     },
@@ -261,6 +267,13 @@ const ScanPage = ({ setScanResults }) => {
       <ContentCard>
         {steps[currentStep].content}
       </ContentCard>
+
+      {/* 登录模态框 */}
+      <LoginModal
+        visible={loginModalVisible}
+        onClose={() => setLoginModalVisible(false)}
+        onLogin={handleLogin}
+      />
     </ScanContainer>
   );
 };

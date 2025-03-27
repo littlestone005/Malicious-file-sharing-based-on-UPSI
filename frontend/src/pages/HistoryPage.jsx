@@ -44,7 +44,7 @@ import ScanHistory from '../components/ScanHistory';
 import { UserContext } from '../App';
 // 导入路由导航钩子
 import { useNavigate } from 'react-router-dom';
-
+import LoginModal from '../components/LoginModal';
 // 从Typography组件中解构出需要的子组件
 const { Title, Text, Paragraph } = Typography;
 // 从Tabs组件中解构出TabPane子组件
@@ -128,7 +128,7 @@ const LoadingContainer = styled.div`
  */
 const HistoryPage = () => {
   // 获取用户上下文
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
   // 路由导航钩子
   const navigate = useNavigate();
   // 页面初始化状态
@@ -136,7 +136,8 @@ const HistoryPage = () => {
   
   // 判断用户是否已登录
   const isLoggedIn = !!user;
-  
+  const [loginModalVisible, setLoginModalVisible] = useState(false);
+
   /**
    * 页面初始化效果
    * 
@@ -157,6 +158,21 @@ const HistoryPage = () => {
     navigate('/login', { state: { from: '/history' } });
   };
 
+  /**
+   * 处理登录按钮点击，显示登录模态框
+   */
+  const handleLoginClick = () => {
+    setLoginModalVisible(true);
+  };
+
+  /**
+   * 处理用户登录
+   * 
+   * @param {Object} userData - 登录后的用户数据
+   */
+  const handleLogin = (userData) => {
+    setUser(userData);
+  };
   /**
    * 示例统计数据
    * 
@@ -307,12 +323,18 @@ const HistoryPage = () => {
             type="primary" 
             size="large"
             icon={<LoginOutlined />}
-            onClick={goToLogin}
+            onClick={handleLoginClick}
           >
             立即登录查看历史记录
           </Button>
         </LoginPromptContainer>
       )}
+      {/* 登录模态框 */}
+      <LoginModal 
+        visible={loginModalVisible}
+        onClose={() => setLoginModalVisible(false)}
+        onLogin={handleLogin}
+      />
     </HistoryContainer>
   );
 };

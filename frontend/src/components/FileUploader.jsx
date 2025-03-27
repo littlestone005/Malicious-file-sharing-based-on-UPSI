@@ -7,8 +7,6 @@
  * 3. 企业用户的批量上传功能
  * 4. 文件哈希计算
  * 5. 文件列表显示
- * 
- * 组件会根据用户类型（个人/企业）显示不同的上传界面
  */
 
 // 导入React钩子和上下文
@@ -23,8 +21,6 @@ import styled from 'styled-components';
 import CryptoJS from 'crypto-js';
 // 导入用户上下文
 import { UserContext } from '../App';
-// 导入路由导航钩子
-import { useNavigate } from 'react-router-dom';
 
 // 从Upload组件中解构出Dragger子组件，用于拖拽上传
 const { Dragger } = Upload;
@@ -35,8 +31,6 @@ const { TabPane } = Tabs;
 
 /**
  * 上传器容器样式
- * 
- * 设置上下外边距
  */
 const UploaderContainer = styled.div`
   margin: 20px 0;
@@ -44,8 +38,6 @@ const UploaderContainer = styled.div`
 
 /**
  * 隐私模式切换区域样式
- * 
- * 使用flex布局，设置背景色、圆角和边框
  */
 const PrivacyToggle = styled.div`
   display: flex;
@@ -59,8 +51,6 @@ const PrivacyToggle = styled.div`
 
 /**
  * 隐私信息区域样式
- * 
- * 设置左侧外边距，与开关保持间距
  */
 const PrivacyInfo = styled.div`
   margin-left: 15px;
@@ -68,8 +58,6 @@ const PrivacyInfo = styled.div`
 
 /**
  * 企业用户提示样式
- * 
- * 基于Alert组件的自定义样式，设置底部外边距
  */
 const EnterpriseAlert = styled(Alert)`
   margin-bottom: 20px;
@@ -77,8 +65,6 @@ const EnterpriseAlert = styled(Alert)`
 
 /**
  * 文件列表容器样式
- * 
- * 设置上边距、最大高度和垂直滚动
  */
 const FileList = styled.div`
   margin-top: 20px;
@@ -88,9 +74,6 @@ const FileList = styled.div`
 
 /**
  * 文件项样式
- * 
- * 使用flex布局，设置内边距和底部边框
- * 最后一项不显示底部边框
  */
 const FileItem = styled.div`
   display: flex;
@@ -105,8 +88,6 @@ const FileItem = styled.div`
 
 /**
  * 文件图标样式
- * 
- * 设置右侧外边距和字体大小
  */
 const FileIcon = styled(FileOutlined)`
   margin-right: 8px;
@@ -115,8 +96,6 @@ const FileIcon = styled(FileOutlined)`
 
 /**
  * 登录提示容器样式
- * 
- * 设置文本居中和内边距
  */
 const LoginPromptContainer = styled.div`
   text-align: center;
@@ -131,10 +110,15 @@ const LoginPromptContainer = styled.div`
  * @param {boolean} props.isLoading - 加载状态
  * @param {Function} props.setIsLoading - 设置加载状态的函数
  * @param {boolean} props.isDisabled - 是否禁用上传功能（未登录时）
+ * @param {Function} props.onLoginClick - 登录按钮点击回调函数
  */
-const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = false }) => {
-  // 路由导航钩子
-  const navigate = useNavigate();
+const FileUploader = ({ 
+  onFilesProcessed, 
+  isLoading, 
+  setIsLoading, 
+  isDisabled = false, 
+  onLoginClick 
+}) => {
   // 从用户上下文中获取用户信息
   const { user } = useContext(UserContext);
   // 文件列表状态
@@ -148,16 +132,7 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
   const isEnterpriseUser = user?.userType === 'enterprise';
 
   /**
-   * 导航到登录页面
-   */
-  const goToLogin = () => {
-    navigate('/login', { state: { from: '/scan' } });
-  };
-
-  /**
    * 计算文件的SHA-256哈希值
-   * 
-   * 使用FileReader读取文件内容，然后使用CryptoJS计算哈希值
    * 
    * @param {File} file - 要计算哈希的文件对象
    * @returns {Promise<string>} 返回文件的SHA-256哈希值
@@ -189,8 +164,6 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
 
   /**
    * 处理文件上传
-   * 
-   * 计算所有文件的哈希值，然后调用onFilesProcessed回调
    */
   const handleUpload = async () => {
     // 如果未登录，提示用户登录
@@ -247,10 +220,7 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
   /**
    * 处理文件列表变化
    * 
-   * 当用户添加或删除文件时更新文件列表状态
-   * 
    * @param {Object} info - 文件变化信息
-   * @param {Array} info.fileList - 新的文件列表
    */
   const handleFileChange = ({ fileList: newFileList }) => {
     if (isDisabled) {
@@ -263,12 +233,7 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
   /**
    * 自定义请求处理
    * 
-   * 覆盖默认的上传行为，防止文件实际上传到服务器
-   * 文件会保留在本地进行处理
-   * 
    * @param {Object} options - 请求选项
-   * @param {File} options.file - 文件对象
-   * @param {Function} options.onSuccess - 成功回调
    */
   const customRequest = ({ file, onSuccess }) => {
     // 立即调用成功回调，模拟上传成功
@@ -279,8 +244,6 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
 
   /**
    * 处理批量文件上传
-   * 
-   * 用于企业用户的批量上传功能
    * 
    * @param {Event} e - 文件输入事件
    */
@@ -321,11 +284,11 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
             type="primary" 
             icon={<LoginOutlined />} 
             size="large"
-            onClick={goToLogin}
+            onClick={onLoginClick} // 使用传入的登录按钮回调
           >
             立即登录
           </Button>
-        </LoginPromptContainer>
+        </LoginPromptContainer>      
       </UploaderContainer>
     );
   }
@@ -350,22 +313,21 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
         </PrivacyInfo>
       </PrivacyToggle>
 
-
       <Dragger
-          fileList={fileList}
-          onChange={handleFileChange}
-          customRequest={customRequest}
-          multiple={true}
-          showUploadList={true}
-          disabled={isDisabled}
-        >
-          <p className="ant-upload-drag-icon">
-            <InboxOutlined style={{ color: 'var(--color-primary)', fontSize: '48px' }} />
-          </p>
-          <p className="ant-upload-text">点击或拖拽文件到此区域进行扫描</p>
-          <p className="ant-upload-hint">
-            支持单个或批量上传。文件将在本地进行哈希处理以保护隐私。
-          </p>
+        fileList={fileList}
+        onChange={handleFileChange}
+        customRequest={customRequest}
+        multiple={true}
+        showUploadList={true}
+        disabled={isDisabled}
+      >
+        <p className="ant-upload-drag-icon">
+          <InboxOutlined style={{ color: 'var(--color-primary)', fontSize: '48px' }} />
+        </p>
+        <p className="ant-upload-text">点击或拖拽文件到此区域进行扫描</p>
+        <p className="ant-upload-hint">
+          支持单个或批量上传。文件将在本地进行哈希处理以保护隐私。
+        </p>
       </Dragger>
 
       {/* 扫描按钮 */}
@@ -383,4 +345,4 @@ const FileUploader = ({ onFilesProcessed, isLoading, setIsLoading, isDisabled = 
   );
 };
 
-export default FileUploader; 
+export default FileUploader;
