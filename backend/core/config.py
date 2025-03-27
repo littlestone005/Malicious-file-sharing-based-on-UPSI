@@ -1,42 +1,84 @@
 from pydantic import BaseSettings
 import os
 from dotenv import load_dotenv
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union, AnyHttpUrl
 import pathlib
+import secrets
 
 # 加载.env文件
 load_dotenv()
 
 class Settings(BaseSettings):
-    # 基础配置
-    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Malicious File Detection")
-    VERSION: str = os.getenv("VERSION", "0.1.0")
-    DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    """应用程序配置设置"""
+    # API相关配置
+    API_V1_STR: str = "/api/v1"
+    SECRET_KEY: str = secrets.token_urlsafe(32)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
     
-    # API配置
-    API_V1_STR: str = os.getenv("API_V1_STR", "/api/v1")
-    SERVER_HOST: str = os.getenv("SERVER_HOST", "0.0.0.0")
-    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8000"))
+    # CORS配置
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+
+    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+        """验证并处理CORS来源配置"""
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
+
+    # 项目信息
+    PROJECT_NAME: str = "Malicious File Sharing Based on UPSI"
+    DESCRIPTION: str = "基于非平衡PSI的恶意文件特征共享系统"
+    VERSION: str = "0.1.0"
     
     # 数据库配置
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./malware_detection.db")
+    DATABASE_URL: str = "sqlite:///./malware_detection.db"
     
-    # 安全配置
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    # 数据库连接池配置
+    DB_POOL_SIZE: int = 20
+    DB_POOL_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800  # 30分钟
+    
+    # 数据库性能监控配置
+    SLOW_QUERY_THRESHOLD: float = 0.5  # 慢查询阈值（秒）
+    
+    # 文件上传配置
+    UPLOAD_DIR: str = "uploads"
+    MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
+    ALLOWED_EXTENSIONS: List[str] = ["exe", "dll", "sys", "zip", "rar", "7z", "pdf", "doc", "docx", "xls", "xlsx"]
+    
+    # PSI算法配置
+    PSI_FEATURE_COUNT: int = 200  # 每个文件提取的特征数量
+    PSI_MATCH_THRESHOLD: float = 0.6  # PSI匹配阈值
+    
+    # 缓存配置
+    CACHE_ENABLED: bool = True
+    CACHE_EXPIRATION: int = 3600  # 1小时（秒）
+    
+    # 安全设置
+    REQUIRE_HTTPS: bool = False  # 生产环境设为True
+    PASSWORD_MIN_LENGTH: int = 8  # 密码最小长度
+    
+    # 调试模式
+    DEBUG: bool = False
+    
+    # 日志配置
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE: str = "logs/app.log"
+    
+    # 基础配置
+    SERVER_HOST: str = os.getenv("SERVER_HOST", "0.0.0.0")
+    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8000"))
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     PASSWORD_HASH_ALGORITHM: str = os.getenv("PASSWORD_HASH_ALGORITHM", "bcrypt")
     PASSWORD_HASH_ROUNDS: int = int(os.getenv("PASSWORD_HASH_ROUNDS", "12"))
     MIN_PASSWORD_LENGTH: int = int(os.getenv("MIN_PASSWORD_LENGTH", "8"))
     PASSWORD_COMPLEXITY: bool = os.getenv("PASSWORD_COMPLEXITY", "true").lower() == "true"
     
-    # CORS配置
-    BACKEND_CORS_ORIGINS: List[str] = os.getenv("BACKEND_CORS_ORIGINS", "").replace(" ", "").split(",") or ["http://localhost:3000"]
-    
     # 上传配置
     BASE_DIR: pathlib.Path = pathlib.Path(__file__).resolve().parent.parent.parent
-    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
     UPLOAD_PATH: pathlib.Path = BASE_DIR / "uploads"
     SCAN_UPLOAD_PATH: pathlib.Path = BASE_DIR / "uploads" / "scans"
     TEMP_UPLOAD_PATH: pathlib.Path = BASE_DIR / "uploads" / "temp"
@@ -44,10 +86,8 @@ class Settings(BaseSettings):
     ALLOWED_FILE_TYPES: List[str] = os.getenv("ALLOWED_FILE_TYPES", "txt,pdf,doc,docx,xls,xlsx").replace(" ", "").split(",")
     
     # 日志配置
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     LOG_DIR: pathlib.Path = BASE_DIR / "logs"
-    LOG_FILE: str = os.getenv("LOG_FILE", str(LOG_DIR / "app.log"))
     
     # 速率限制
     RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
@@ -76,6 +116,7 @@ class Settings(BaseSettings):
     ]
     
     class Config:
+        """Pydantic配置"""
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
@@ -114,4 +155,7 @@ def initialize_psi():
     except ImportError:
         print("警告: PSI包装器未找到，跳过PSI初始化")
     except Exception as e:
-        print(f"警告: PSI初始化错误: {str(e)}") 
+        print(f"警告: PSI初始化错误: {str(e)}")
+
+# 配置变量
+ALGORITHM = "HS256"  # JWT算法 
