@@ -296,19 +296,6 @@ const HistoryPage = () => {
             <TabPane tab="所有记录" key="all">
               <ScanHistory />
             </TabPane>
-            {/* 已检测到威胁标签页 */}
-            <TabPane tab="已检测到威胁" key="infected">
-              {/* 这里可以传递过滤参数给ScanHistory组件 */}
-              <ScanHistory />
-            </TabPane>
-            {/* 可疑文件标签页 */}
-            <TabPane tab="可疑文件" key="suspicious">
-              <ScanHistory />
-            </TabPane>
-            {/* 安全文件标签页 */}
-            <TabPane tab="安全文件" key="clean">
-              <ScanHistory />
-            </TabPane>
           </Tabs>
         </>
       ) : (

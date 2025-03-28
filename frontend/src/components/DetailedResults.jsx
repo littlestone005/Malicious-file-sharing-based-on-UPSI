@@ -93,7 +93,7 @@ const SummaryItem = styled.div`
   flex: 1;
   min-width: 200px;
   padding: 15px;
-  background-color: #f9f9f9;
+  background-color:rgb(42, 39, 39);
   border-radius: 8px;
   display: flex;
   flex-direction: column;

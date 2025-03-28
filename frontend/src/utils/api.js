@@ -100,7 +100,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // 对于登录请求，返回完整的响应
-    if (response.config.url === '/auth/token') {
+    if (response.config.url === '/auth/token' || response.config.url === '/auth/login') {
       return response;
     }
     // 对于其他请求，返回响应数据
@@ -131,7 +131,8 @@ export const authAPI = {
   // 用户登录
   login: async (username, password) => {
     try {
-      const response = await api.post('/auth/token', {
+      // 使用/auth/login端点，该端点支持JSON格式
+      const response = await api.post('/auth/login', {
         username,
         password
       });

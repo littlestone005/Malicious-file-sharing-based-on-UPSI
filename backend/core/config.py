@@ -1,7 +1,13 @@
-from pydantic import BaseSettings
+"""
+应用程序配置模块
+
+包含所有应用程序配置参数和环境变量
+"""
+
+from pydantic import BaseSettings, AnyHttpUrl, validator
 import os
 from dotenv import load_dotenv
-from typing import List, Optional, Dict, Any, Union, AnyHttpUrl
+from typing import List, Optional, Dict, Any, Union
 import pathlib
 import secrets
 

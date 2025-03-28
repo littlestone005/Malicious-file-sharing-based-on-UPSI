@@ -13,7 +13,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { Typography, Card, Steps, Button, Badge, Alert, Spin } from 'antd';// 导入Ant Design组件
 import { useNavigate } from 'react-router-dom';// 导入路由导航钩子
-import { FileAddOutlined, ScanOutlined, SafetyCertificateOutlined, BankOutlined, LoginOutlined } from '@ant-design/icons';
+import { FileAddOutlined, ScanOutlined, SafetyCertificateOutlined, BankOutlined, LoginOutlined } from '@ant-design/icons';// 导入Ant Design图标
 import styled from 'styled-components';// 导入样式组件库
 import FileUploader from '../components/FileUploader';// 导入文件上传器组件
 import { UserContext } from '../App';// 导入用户上下文
@@ -104,8 +104,8 @@ const ScanPage = ({ setScanResults }) => {
   const [isLoading, setIsLoading] = useState(false);
   // 页面初始化状态
   const [initializing, setInitializing] = useState(true);
-  
-  const [loginModalVisible, setLoginModalVisible] = useState(false);
+  const [loginModalVisible, setLoginModalVisible] = useState(false); // 控制登录模态框的显示
+
   // 判断是否为企业用户
   const isEnterpriseUser = user?.userType === 'enterprise';
   // 判断用户是否已登录
@@ -124,7 +124,8 @@ const ScanPage = ({ setScanResults }) => {
     return () => clearTimeout(timer);
   }, []);
 
- /**
+
+  /**
    * 处理登录按钮点击，显示登录模态框
    */
   const handleLoginClick = () => {
@@ -238,6 +239,8 @@ const ScanPage = ({ setScanResults }) => {
         />
       )}
 
+      
+
       {/* 页面标题和企业版标识 */}
       <Title level={2}>
         扫描文件检测恶意软件
@@ -269,7 +272,7 @@ const ScanPage = ({ setScanResults }) => {
       </ContentCard>
 
       {/* 登录模态框 */}
-      <LoginModal
+      <LoginModal 
         visible={loginModalVisible}
         onClose={() => setLoginModalVisible(false)}
         onLogin={handleLogin}

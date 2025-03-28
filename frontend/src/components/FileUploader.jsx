@@ -21,6 +21,7 @@ import styled from 'styled-components';
 import CryptoJS from 'crypto-js';
 // 导入用户上下文
 import { UserContext } from '../App';
+import LoginModal from '../components/LoginModal';
 
 // 从Upload组件中解构出Dragger子组件，用于拖拽上传
 const { Dragger } = Upload;
@@ -288,7 +289,8 @@ const FileUploader = ({
           >
             立即登录
           </Button>
-        </LoginPromptContainer>      
+        </LoginPromptContainer> 
+           
       </UploaderContainer>
     );
   }

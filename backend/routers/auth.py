@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -23,11 +23,42 @@ class LoginRequest(BaseModel):
 
 @router.post("/token", response_model=TokenResponse)
 async def login_for_access_token(
-    login_data: LoginRequest,
+    username: str = Form(...),
+    password: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """
     用户登录并获取令牌
+    
+    使用用户名和密码获取访问令牌
+    """
+    user = await authenticate_user(db, username, password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=user.id, expires_delta=access_token_expires
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "username": user.username
+    }
+
+# 添加一个自定义端点，支持JSON格式的登录请求
+@router.post("/login", response_model=TokenResponse)
+async def login_json(
+    login_data: LoginRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    用户登录并获取令牌（JSON格式）
     
     使用用户名和密码获取访问令牌
     """
