@@ -14,7 +14,7 @@ import { useState, useContext } from 'react';
 // 导入路由相关组件和钩子
 import { Link, useLocation } from 'react-router-dom';
 // 导入Ant Design组件
-import { Layout, Menu, Button, Dropdown, Avatar, Space, Tag } from 'antd';
+import { Layout, Menu, Button, Dropdown, Avatar, Space, Tag, Spin, Modal, message } from 'antd';
 // 导入Ant Design图标
 import { 
   SafetyOutlined,  // 安全/盾牌图标
@@ -121,6 +121,8 @@ const Header = () => {
   const location = useLocation();
   // 控制登录模态框的显示状态
   const [loginModalVisible, setLoginModalVisible] = useState(false);
+  // 退出确认对话框状态
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   // 从上下文中获取用户状态和设置函数
   const { user, setUser } = useContext(UserContext);
   
@@ -134,15 +136,32 @@ const Header = () => {
   };
   
   /**
-   * 处理用户登出
-   * 
-   * 清除本地存储的用户信息和token
-   * 清除用户状态
+   * 处理用户退出登录
    */
   const handleLogout = () => {
+    // 打开确认对话框
+    setLogoutModalVisible(true);
+  };
+  
+  /**
+   * 确认退出登录
+   */
+  const confirmLogout = () => {
+    // 清除本地存储中的用户数据和令牌
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    // 更新用户上下文
     setUser(null);
+    
+    // 关闭对话框
+    setLogoutModalVisible(false);
+    
+    // 显示退出成功消息
+    message.success('已成功退出登录');
+    
+    // 刷新页面，重定向到首页
+    window.location.href = '/';
   };
   
   /**
@@ -250,6 +269,18 @@ const Header = () => {
         onClose={() => setLoginModalVisible(false)}
         onLogin={handleLogin}
       />
+      
+      {/* 退出登录确认对话框 */}
+      <Modal
+        title="确认退出"
+        open={logoutModalVisible}
+        onOk={confirmLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+        okText="确认退出"
+        cancelText="取消"
+      >
+        <p>确定要退出登录吗？</p>
+      </Modal>
     </StyledHeader>
   );
 };
