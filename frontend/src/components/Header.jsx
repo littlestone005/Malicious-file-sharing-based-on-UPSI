@@ -79,9 +79,6 @@ const ShieldIcon = styled(SafetyOutlined)`
 
 /**
  * 自定义菜单样式
- * 
- * 使用flex: 1使菜单占据头部中间的所有可用空间
- * 设置透明背景和无底部边框
  */
 const StyledMenu = styled(Menu)`
   flex: 1;
@@ -91,8 +88,6 @@ const StyledMenu = styled(Menu)`
 
 /**
  * 用户区域样式
- * 
- * 位于头部右侧，包含登录按钮或用户信息
  */
 const UserSection = styled.div`
   display: flex;
@@ -152,9 +147,6 @@ const Header = () => {
   
   /**
    * 用户下拉菜单配置
-   * 
-   * 定义用户头像点击后显示的下拉菜单项
-   * 包括个人资料、设置和登出选项
    */
   const userMenuItems = [
     {
@@ -174,9 +166,6 @@ const Header = () => {
   
   /**
    * 主导航菜单配置
-   * 
-   * 定义顶部导航栏的主要菜单项
-   * 每项包含图标、标签和对应的路由链接
    */
   const menuItems = [
     {

@@ -10,13 +10,12 @@
  * 页面使用标签页布局，方便用户在不同设置类别间切换
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入Ant Design组件
 import { 
   Typography, 
-  Breadcrumb, 
   Tabs, 
   Card, 
   Form, 
@@ -25,9 +24,8 @@ import {
   Switch, 
   Select,
   message,
-  Avatar,
-  Upload,
-  Divider
+  Divider,
+  Spin
 } from 'antd';
 // 导入Ant Design图标
 import { 
@@ -36,11 +34,12 @@ import {
   SettingOutlined, 
   BellOutlined,
   SafetyCertificateOutlined,
-  UploadOutlined,
   HomeOutlined
 } from '@ant-design/icons';
 // 导入隐私设置组件
 import PrivacySettings from '../components/PrivacySettings';
+// 导入API
+import { authAPI } from '../utils/api';
 
 // 从Typography组件中解构出需要的子组件
 const { Title, Text } = Typography;
@@ -79,33 +78,7 @@ const ProfileCard = styled(Card)`
  * 在移动设备上切换为垂直布局
  */
 const ProfileHeader = styled.div`
-  display: flex;
-  align-items: center;
   margin-bottom: 24px;
-  
-  @media (max-width: 576px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-`;
-
-/**
- * 头像区域样式
- * 
- * 设置右侧外边距和垂直布局
- * 在移动设备上调整为居中显示
- */
-const AvatarSection = styled.div`
-  margin-right: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  
-  @media (max-width: 576px) {
-    margin-right: 0;
-    margin-bottom: 16px;
-    align-self: center;
-  }
 `;
 
 /**
@@ -138,83 +111,166 @@ const UserSettingsPage = () => {
   // 当前活动标签页状态
   const [activeTab, setActiveTab] = useState('profile');
   // 创建表单实例
-  const [form] = Form.useForm();
+  const [profileForm] = Form.useForm();
+  const [securityForm] = Form.useForm();
+  const [notificationsForm] = Form.useForm();
+  
+  // 用户数据状态
+  const [userData, setUserData] = useState(null);
+  // 加载状态
+  const [loading, setLoading] = useState(true);
+  // 表单提交状态
+  const [submitting, setSubmitting] = useState(false);
+  
+  // 页面加载时获取用户数据
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        const user = await authAPI.getCurrentUser();
+        setUserData(user);
+        
+        // 使用API返回的数据初始化表单
+        profileForm.setFieldsValue({
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          language: user.preferences?.language || 'zh-CN'
+        });
+        
+        // 初始化通知表单
+        notificationsForm.setFieldsValue({
+          email: user.notification_settings?.email || false,
+          browser: user.notification_settings?.browser || false,
+          scanComplete: user.notification_settings?.scan_complete || false,
+          threatDetected: user.notification_settings?.threat_detected || false,
+          updates: user.notification_settings?.updates || false
+        });
+        
+      } catch (error) {
+        message.error('获取用户信息失败，请重试');
+        console.error('Failed to fetch user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [profileForm, notificationsForm]);
   
   /**
-   * 示例用户数据
-   * 
-   * 实际应用中应该从API获取
-   * 包含用户名、邮箱、姓名等基本信息和通知设置
-   */
-  const userData = {
-    username: 'user123',
-    email: 'user@example.com',
-    name: '张三',
-    phone: '13800138000',
-    language: 'zh-CN',
-    notifications: {
-      email: true,
-      browser: true,
-      scanComplete: true,
-      threatDetected: true,
-      updates: false,
-    }
-  };
-  
-  // 初始化表单数据
-  form.setFieldsValue(userData);
-  
-  /**
-   * 处理表单提交
+   * 处理个人资料表单提交
    * 
    * 保存用户修改的个人资料
    * 
    * @param {Object} values - 表单提交的值
    */
-  const handleSubmit = (values) => {
-    console.log('提交的表单数据:', values);
-    message.success('个人资料已更新');
-  };
-  
-  /**
-   * 处理头像上传
-   * 
-   * 当头像上传完成时显示成功消息
-   * 
-   * @param {Object} info - 上传文件的信息
-   */
-  const handleAvatarChange = (info) => {
-    if (info.file.status === 'done') {
-      message.success('头像上传成功');
+  const handleProfileSubmit = async (values) => {
+    try {
+      setSubmitting(true);
+      
+      // 构建更新数据
+      const updateData = {
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        preferences: {
+          language: values.language
+        }
+      };
+      
+      // 调用API更新用户信息
+      await authAPI.updateUser(updateData);
+      
+      // 更新本地状态
+      setUserData({
+        ...userData,
+        ...updateData
+      });
+      
+      message.success('个人资料已更新');
+    } catch (error) {
+      message.error('更新个人资料失败，请重试');
+      console.error('Failed to update profile:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
   
   /**
-   * 头像上传按钮
+   * 处理密码更新
    * 
-   * 定义上传按钮的外观
+   * @param {Object} values - 表单提交的值
    */
-  const uploadButton = (
-    <div>
-      <UploadOutlined />
-      <div style={{ marginTop: 8 }}>上传</div>
-    </div>
-  );
+  const handlePasswordUpdate = async (values) => {
+    try {
+      setSubmitting(true);
+      
+      // 调用API更新密码
+      await authAPI.updateUser({
+        current_password: values.currentPassword,
+        password: values.newPassword
+      });
+      
+      message.success('密码已更新');
+      securityForm.resetFields();
+    } catch (error) {
+      message.error('更新密码失败：' + (error.message || '请重试'));
+      console.error('Failed to update password:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  /**
+   * 处理通知设置更新
+   * 
+   * @param {Object} values - 表单提交的值
+   */
+  const handleNotificationsUpdate = async (values) => {
+    try {
+      setSubmitting(true);
+      
+      // 构建通知设置数据
+      const notificationSettings = {
+        notification_settings: {
+          email: values.email,
+          browser: values.browser,
+          scan_complete: values.scanComplete,
+          threat_detected: values.threatDetected,
+          updates: values.updates
+        }
+      };
+      
+      // 调用API更新通知设置
+      await authAPI.updateUser(notificationSettings);
+      
+      // 更新本地状态
+      setUserData({
+        ...userData,
+        notification_settings: notificationSettings.notification_settings
+      });
+      
+      message.success('通知设置已更新');
+    } catch (error) {
+      message.error('更新通知设置失败，请重试');
+      console.error('Failed to update notification settings:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  // 如果数据正在加载，显示加载状态
+  if (loading) {
+    return (
+      <SettingsContainer>
+        <Spin tip="加载中..." size="large" style={{ display: 'block', margin: '100px auto' }} />
+      </SettingsContainer>
+    );
+  }
   
   return (
     <SettingsContainer>
-      {/* 面包屑导航 */}
-      {/*<Breadcrumb style={{ marginBottom: 16 }}>
-        <Breadcrumb.Item href="/">
-          <HomeOutlined />
-          <span>首页</span>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <SettingOutlined />
-          <span>用户设置</span>
-        </Breadcrumb.Item>
-      </Breadcrumb>*/}
-      
       {/* 页面标题 */}
       <Title level={2}>用户设置</Title>
       
@@ -241,36 +297,21 @@ const UserSettingsPage = () => {
             
             <Divider />
             
-            {/* 个人资料头部：头像和基本信息 */}
+            {/* 个人资料头部：基本信息 */}
             <ProfileHeader>
-              <AvatarSection>
-                <Avatar size={100} icon={<UserOutlined />} />
-                <Upload 
-                  showUploadList={false}
-                  onChange={handleAvatarChange}
-                >
-                  <Button 
-                    icon={<UploadOutlined />} 
-                    style={{ marginTop: 16 }}
-                  >
-                    更换头像
-                  </Button>
-                </Upload>
-              </AvatarSection>
-              
               <UserInfo>
-                <Title level={4}>{userData.name}</Title>
-                <Text type="secondary">用户名: {userData.username}</Text>
+                <Title level={4}>{userData?.name || userData?.username}</Title>
+                <Text type="secondary">用户名: {userData?.username}</Text>
                 <br />
-                <Text type="secondary">邮箱: {userData.email}</Text>
+                <Text type="secondary">邮箱: {userData?.email}</Text>
               </UserInfo>
             </ProfileHeader>
             
             {/* 个人资料表单 */}
             <Form
-              form={form}
+              form={profileForm}
               layout="vertical"
-              onFinish={handleSubmit}
+              onFinish={handleProfileSubmit}
             >
               {/* 基本信息表单区域 */}
               <FormSection>
@@ -320,7 +361,7 @@ const UserSettingsPage = () => {
               
               {/* 提交按钮 */}
               <Form.Item>
-                <Button type="primary" htmlType="submit">
+                <Button type="primary" htmlType="submit" loading={submitting}>
                   保存更改
                 </Button>
               </Form.Item>
@@ -346,7 +387,9 @@ const UserSettingsPage = () => {
             
             {/* 安全设置表单 */}
             <Form
+              form={securityForm}
               layout="vertical"
+              onFinish={handlePasswordUpdate}
             >
               {/* 修改密码表单区域 */}
               <FormSection>
@@ -390,22 +433,22 @@ const UserSettingsPage = () => {
                 </Form.Item>
                 
                 <Form.Item>
-                  <Button type="primary">
+                  <Button type="primary" htmlType="submit" loading={submitting}>
                     更新密码
                   </Button>
                 </Form.Item>
               </FormSection>
               
-              {/* 两步验证表单区域 */}
+              {/* 两步验证表单区域 - 暂时保留但禁用 */}
               <FormSection>
                 <Title level={5}>两步验证</Title>
                 
                 <Form.Item
                   label="启用两步验证"
                 >
-                  <Switch defaultChecked={false} />
+                  <Switch disabled defaultChecked={false} />
                   <Text type="secondary" style={{ marginLeft: 8 }}>
-                    登录时需要额外的验证码
+                    登录时需要额外的验证码（功能开发中）
                   </Text>
                 </Form.Item>
               </FormSection>
@@ -431,8 +474,9 @@ const UserSettingsPage = () => {
             
             {/* 通知设置表单 */}
             <Form
+              form={notificationsForm}
               layout="vertical"
-              initialValues={userData.notifications}
+              onFinish={handleNotificationsUpdate}
             >
               {/* 通知方式表单区域 */}
               <FormSection>
@@ -486,7 +530,7 @@ const UserSettingsPage = () => {
               
               {/* 提交按钮 */}
               <Form.Item>
-                <Button type="primary">
+                <Button type="primary" htmlType="submit" loading={submitting}>
                   保存设置
                 </Button>
               </Form.Item>

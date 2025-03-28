@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from backend.models.user import User
 from backend.core.security import verify_password, get_password_hash
@@ -31,7 +31,7 @@ async def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
     """
     return db.query(User).offset(skip).limit(limit).all()
 
-async def create_user(db: Session, username: str, email: str, password: str) -> User:
+async def create_user(db: Session, username: str, email: str, password: str, name: str = None, phone: str = None) -> User:
     """
     创建新用户
     """
@@ -50,10 +50,14 @@ async def create_user(db: Session, username: str, email: str, password: str) -> 
     db_user = User(
         username=username,
         email=email,
+        name=name,
+        phone=phone,
         password=password,  # 存储明文密码，仅用于展示
         password_hash=hashed_password,  # 存储哈希密码，用于认证
         created_at=datetime.utcnow(),
-        is_active=True
+        is_active=True,
+        preferences={},
+        notification_settings={}
     )
     
     db.add(db_user)
@@ -85,12 +89,40 @@ async def update_user(db: Session, user_id: int, data: dict) -> User:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # 更新可修改的字段
+    # 如果要更新密码，需要验证当前密码
+    if "password" in data and data["password"]:
+        current_password = data.pop("current_password", None)
+        if not current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="必须提供当前密码才能更新密码"
+            )
+        
+        if not verify_password(current_password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前密码不正确"
+            )
+        
+        # 设置新密码
+        user.password = data["password"]  # 更新明文密码
+        user.password_hash = get_password_hash(data["password"])  # 更新哈希密码
+    
+    # 处理preferences字段
+    if "preferences" in data and data["preferences"] is not None:
+        if user.preferences is None:
+            user.preferences = {}
+        user.preferences.update(data.pop("preferences"))
+    
+    # 处理notification_settings字段
+    if "notification_settings" in data and data["notification_settings"] is not None:
+        if user.notification_settings is None:
+            user.notification_settings = {}
+        user.notification_settings.update(data.pop("notification_settings"))
+    
+    # 更新其他可修改的字段
     for key, value in data.items():
-        if key == "password":
-            # 如果更新密码，需要哈希处理
-            setattr(user, "password_hash", get_password_hash(value))
-        elif hasattr(user, key) and key != "id" and key != "password_hash":
+        if hasattr(user, key) and key != "id" and key != "password_hash" and key != "password":
             setattr(user, key, value)
     
     db.commit()
