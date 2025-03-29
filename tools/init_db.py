@@ -13,6 +13,7 @@ from datetime import datetime
 import socket
 import subprocess
 import time
+import json
 
 # 设置日志
 logging.basicConfig(
@@ -107,6 +108,7 @@ def create_tables(conn):
     CREATE TABLE IF NOT EXISTS scan_records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
+        user_name TEXT NOT NULL,
         file_name TEXT NOT NULL,
         file_hash TEXT NOT NULL,
         file_size INTEGER NOT NULL,
@@ -225,6 +227,159 @@ def add_sample_threats(conn):
     logger.info(f"已添加 {len(threats)} 条示例威胁数据")
     return True
 
+def add_sample_scan_records(conn):
+    """添加示例扫描记录"""
+    cursor = conn.cursor()
+    
+    # 获取用户ID
+    cursor.execute("SELECT id FROM users WHERE username = ?", ("admin",))
+    admin_id = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT id FROM users WHERE username = ?", ("testuser",))
+    testuser_id = cursor.fetchone()[0]
+    
+    # 创建一些示例扫描记录
+    example_records = [
+        # 管理员用户的记录 - 包含各种不同状态和文件类型
+        {
+            "user_id": admin_id,
+            "user_name": "admin",
+            "file_name": "document.pdf",
+            "file_hash": "5f4dcc3b5aa765d61d8327deb882cf99",
+            "file_size": 1250000,
+            "scan_date": "2023-12-15T14:30:22",
+            "status": "completed",
+            "privacy_enabled": 1,
+            "result": json.dumps({
+                "is_malicious": False,
+                "scan_method": "psi",
+                "privacy_proof": "base64_encoded_proof_data"
+            })
+        },
+        {
+            "user_id": admin_id,
+            "user_name": "admin",
+            "file_name": "setup.exe",
+            "file_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "file_size": 4500000,
+            "scan_date": "2023-12-14T10:15:45",
+            "status": "completed",
+            "privacy_enabled": 1,
+            "result": json.dumps({
+                "is_malicious": True,
+                "scan_method": "psi",
+                "threat_details": {
+                    "type": "Trojan",
+                    "severity": "high",
+                    "description": "Trojan horse that steals banking credentials"
+                }
+            })
+        },
+        {
+            "user_id": admin_id,
+            "user_name": "admin",
+            "file_name": "script.js",
+            "file_hash": "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+            "file_size": 35000,
+            "scan_date": "2023-12-13T09:22:18",
+            "status": "completed",
+            "privacy_enabled": 1,
+            "result": json.dumps({
+                "is_malicious": True,
+                "scan_method": "psi",
+                "threat_details": {
+                    "type": "Spyware",
+                    "severity": "medium",
+                    "description": "JavaScript code with suspicious behavior pattern"
+                }
+            })
+        },
+        {
+            "user_id": admin_id,
+            "user_name": "admin",
+            "file_name": "image.jpg",
+            "file_hash": "d16fb36f0911f878998c136191af705e",
+            "file_size": 2500000,
+            "scan_date": "2023-12-12T16:45:30",
+            "status": "completed",
+            "privacy_enabled": 1,
+            "result": json.dumps({
+                "is_malicious": False,
+                "scan_method": "psi"
+            })
+        },
+        {
+            "user_id": admin_id,
+            "user_name": "admin",
+            "file_name": "archive.zip",
+            "file_hash": "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
+            "file_size": 7800000,
+            "scan_date": "2023-12-11T11:10:05",
+            "status": "completed",
+            "privacy_enabled": 0,
+            "result": json.dumps({
+                "is_malicious": False,
+                "scan_method": "direct"
+            })
+        },
+        # 测试用户的记录
+        {
+            "user_id": testuser_id,
+            "user_name": "testuser",
+            "file_name": "presentation.pptx",
+            "file_hash": "d8d5f5f5f5f5f5f5f5f5f5f5f5f5f5f5",
+            "file_size": 3500000,
+            "scan_date": "2023-12-10T13:22:15",
+            "status": "completed",
+            "privacy_enabled": 1,
+            "result": json.dumps({
+                "is_malicious": False,
+                "scan_method": "psi"
+            })
+        },
+        {
+            "user_id": testuser_id,
+            "user_name": "testuser",
+            "file_name": "malware_sample.exe",
+            "file_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "file_size": 250000,
+            "scan_date": "2023-12-09T09:15:30",
+            "status": "completed",
+            "privacy_enabled": 1,
+            "result": json.dumps({
+                "is_malicious": True,
+                "scan_method": "psi",
+                "threat_details": {
+                    "type": "Ransomware",
+                    "severity": "high",
+                    "description": "Ransomware that encrypts user files and demands payment"
+                }
+            })
+        }
+    ]
+    
+    # 插入示例记录
+    for record in example_records:
+        cursor.execute("""
+        INSERT INTO scan_records 
+        (user_id, user_name, file_name, file_hash, file_size, scan_date, status, privacy_enabled, result)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            record["user_id"],
+            record["user_name"],
+            record["file_name"],
+            record["file_hash"],
+            record["file_size"],
+            record["scan_date"],
+            record["status"],
+            record["privacy_enabled"],
+            record["result"]
+        ))
+    
+    conn.commit()
+    logger.info(f"已添加 {len(example_records)} 条示例扫描记录")
+    return True
+
 def is_backend_running(port=8000):
     """检查后端服务是否正在运行"""
     try:
@@ -276,12 +431,16 @@ def init_db():
         # 添加示例威胁数据
         add_sample_threats(conn)
         
+        # 添加示例扫描记录
+        add_sample_scan_records(conn)
+        
         # 计算运行时间
         elapsed = (datetime.now() - start_time).total_seconds()
         logger.info(f"✅ 数据库初始化完成! (用时: {elapsed:.2f}秒)")
         logger.info("  - 数据库已重新创建")
         logger.info("  - 已添加默认用户: admin, testuser")
         logger.info("  - 已添加示例威胁数据")
+        logger.info("  - 已添加示例扫描记录")
         logger.info("\n请记得重启后端服务以应用新的数据库!")
         
     finally:
@@ -295,7 +454,15 @@ if __name__ == "__main__":
         exit()
     init_db()
 
+    logger.info("开始检查前端服务")
     if is_frontend_running():
+        logger.info("前端服务正在运行")
+        logger.info("开始重启后端服务")
         # 重启后端服务器
         backend_cmd = f'"{sys.executable}" -m backend.main'
         subprocess.Popen(f'start cmd /k {backend_cmd}', shell=True)
+        logger.info("后端服务已重启")
+    else:
+        logger.info("前端服务未运行，无需重启")
+        
+    logger.info("数据库初始化完成")

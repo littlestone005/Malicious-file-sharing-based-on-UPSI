@@ -12,9 +12,19 @@
 // 导入React钩子和上下文
 import { useState, useCallback, useContext } from 'react';
 // 导入Ant Design组件
-import { Upload, Button, Switch, Card, Typography, message, Spin, Alert, Tabs } from 'antd';
+import { Upload, Button, Switch, Card, Typography, message, Spin, Alert, Tabs, Tooltip } from 'antd';
 // 导入Ant Design图标
-import { InboxOutlined, LockOutlined, UnlockOutlined, BankOutlined, FileOutlined, LoginOutlined } from '@ant-design/icons';
+import { 
+  InboxOutlined, 
+  LockOutlined, 
+  UnlockOutlined, 
+  BankOutlined, 
+  FileOutlined, 
+  LoginOutlined, 
+  CopyOutlined,
+  DeleteOutlined,
+  CloseOutlined
+} from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入加密库，用于计算文件哈希
@@ -96,6 +106,18 @@ const FileIcon = styled(FileOutlined)`
 `;
 
 /**
+ * 哈希值容器样式
+ */
+const HashContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+`;
+
+/**
  * 登录提示容器样式
  */
 const LoginPromptContainer = styled.div`
@@ -133,6 +155,20 @@ const FileUploader = ({
   const isEnterpriseUser = user?.userType === 'enterprise';
 
   /**
+   * 复制内容到剪贴板
+   */
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        message.success('已复制到剪贴板');
+      },
+      () => {
+        message.error('复制失败，请手动复制');
+      }
+    );
+  };
+
+  /**
    * 计算文件的SHA-256哈希值
    * 
    * @param {File} file - 要计算哈希的文件对象
@@ -149,16 +185,35 @@ const FileUploader = ({
           // 获取文件二进制内容
           const binary = e.target.result;
           // 使用CryptoJS计算SHA-256哈希值
-          const hash = CryptoJS.SHA256(CryptoJS.lib.WordArray.create(binary)).toString();
+          // 注意：CryptoJS.WordArray.create会创建一个WordArray对象，用于处理二进制数据
+          // CryptoJS.SHA256函数会使用SHA-256算法计算哈希值，然后toString输出十六进制字符串
+          const wordArray = CryptoJS.lib.WordArray.create(binary);
+          const hash = CryptoJS.SHA256(wordArray).toString();
+          
+          console.log('计算文件哈希值:', file.name, hash);
+          
+          // 更新文件列表中的哈希值
+          setFileList(prevList => 
+            prevList.map(item => 
+              item.originFileObj === file || (item.uid === file.uid) ? { ...item, hash } : item
+            )
+          );
+          
           resolve(hash);
         } catch (error) {
+          console.error('计算文件哈希失败:', error);
           reject(error);
         }
       };
       
       // 文件读取错误的回调
-      reader.onerror = (error) => reject(error);
+      reader.onerror = (error) => {
+        console.error('文件读取失败:', error);
+        reject(error);
+      };
+      
       // 以ArrayBuffer格式读取文件
+      // 使用ArrayBuffer可以处理大型二进制文件，并提供更好的性能
       reader.readAsArrayBuffer(file);
     });
   };
@@ -183,11 +238,18 @@ const FileUploader = ({
     setIsLoading(true);
     
     try {
+      // 先为每个文件计算并显示哈希值
+      fileList.forEach(file => {
+        if (!file.hash) {
+          calculateFileHash(file.originFileObj);
+        }
+      });
+      
       // 处理每个文件以获取其哈希值
       const fileHashes = await Promise.all(
         fileList.map(async (file) => {
           // 计算文件哈希值
-          const hash = await calculateFileHash(file.originFileObj);
+          const hash = file.hash || await calculateFileHash(file.originFileObj);
           // 返回文件信息和哈希值
           return {
             fileName: file.name,
@@ -228,7 +290,20 @@ const FileUploader = ({
       message.warning('请先登录以使用文件扫描功能');
       return;
     }
+    
     setFileList(newFileList);
+    
+    // 立即计算新添加文件的哈希值
+    const addedFiles = newFileList.filter(file => 
+      !fileList.some(existingFile => existingFile.uid === file.uid) && 
+      file.status === 'done' && 
+      file.originFileObj && 
+      !file.hash
+    );
+    
+    for (const file of addedFiles) {
+      calculateFileHash(file.originFileObj);
+    }
   };
 
   /**
@@ -290,7 +365,6 @@ const FileUploader = ({
             立即登录
           </Button>
         </LoginPromptContainer> 
-           
       </UploaderContainer>
     );
   }
@@ -309,8 +383,8 @@ const FileUploader = ({
           <Text strong>隐私模式: {usePSI ? '已启用' : '已禁用'}</Text>
           <Paragraph type="secondary">
             {usePSI 
-              ? '使用PSI协议，只有恶意文件的哈希值会被服务器获知。' 
-              : '所有文件哈希将被发送到服务器进行检查（隐私性较低）。'}
+              ? '使用PSI协议进行隐私保护检测，只有恶意文件信息会被识别。' 
+              : '所有文件哈希将被发送到服务器进行检查。'}
           </Paragraph>
         </PrivacyInfo>
       </PrivacyToggle>
@@ -320,8 +394,45 @@ const FileUploader = ({
         onChange={handleFileChange}
         customRequest={customRequest}
         multiple={true}
-        showUploadList={true}
+        showUploadList={{
+          showRemoveIcon: true,
+          removeIcon: <Button type="text" size="small" icon={<CloseOutlined />} />,
+        }}
         disabled={isDisabled}
+        itemRender={(originNode, file, fileList, actions) => {
+          return (
+            <Card size="small" style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <FileIcon />
+                    <Text strong>{file.name}</Text>
+                  </div>
+                  {file.hash && (
+                    <HashContainer>
+                      <Text type="secondary" style={{ marginRight: 8 }}>SHA-256:</Text>
+                      <Text code ellipsis style={{ maxWidth: '200px' }}>{file.hash}</Text>
+                      <Tooltip title="复制哈希值">
+                        <Button 
+                          type="text" 
+                          icon={<CopyOutlined />} 
+                          size="small" 
+                          onClick={() => copyToClipboard(file.hash)}
+                          style={{ marginLeft: 8 }}
+                        />
+                      </Tooltip>
+                    </HashContainer>
+                  )}
+                </div>
+                <Button 
+                  type="text" 
+                  icon={<DeleteOutlined />} 
+                  onClick={() => actions.remove()}
+                />
+              </div>
+            </Card>
+          );
+        }}
       >
         <p className="ant-upload-drag-icon">
           <InboxOutlined style={{ color: 'var(--color-primary)', fontSize: '48px' }} />

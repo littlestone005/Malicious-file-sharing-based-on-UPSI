@@ -25,7 +25,8 @@ import {
   Alert,
   Button,
   Empty,
-  Spin
+  Spin,
+  message
 } from 'antd';
 // 导入Ant Design图标
 import { 
@@ -45,6 +46,8 @@ import { UserContext } from '../App';
 // 导入路由导航钩子
 import { useNavigate } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
+// 导入API工具
+import { scanAPI } from '../utils/api';
 // 从Typography组件中解构出需要的子组件
 const { Title, Text, Paragraph } = Typography;
 // 从Tabs组件中解构出TabPane子组件
@@ -133,10 +136,63 @@ const HistoryPage = () => {
   const navigate = useNavigate();
   // 页面初始化状态
   const [initializing, setInitializing] = useState(true);
+  // 登录模态框状态
+  const [loginModalVisible, setLoginModalVisible] = useState(false);
+  // 统计数据状态
+  const [stats, setStats] = useState({
+    totalScans: -1,
+    cleanFiles: -1,
+    infectedFiles: -1,
+    suspiciousFiles: -1,
+    privacyProtected: -1,
+  });
+  // 统计数据加载状态
+  const [statsLoading, setStatsLoading] = useState(false);
   
   // 判断用户是否已登录
   const isLoggedIn = !!user;
-  const [loginModalVisible, setLoginModalVisible] = useState(false);
+
+  /**
+   * 从API获取统计数据
+   */
+  const fetchStatistics = async () => {
+    if (!isLoggedIn) return;
+    
+    try {
+      setStatsLoading(true);
+      const response = await scanAPI.getScanStatistics();
+      setStats(response);
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+      let errorMessage = '获取统计数据失败, 请检查后端服务';
+      
+      // 根据错误类型提供更具体的提示
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = '会话已过期，请重新登录';
+        } else if (error.response.status === 422) {
+          errorMessage = '数据格式错误，请联系管理员';
+        } else if (error.response.status >= 500) {
+          errorMessage = '服务器错误，请稍后再试';
+        }
+      } else if (error.request) {
+        errorMessage = '无法连接到服务器，请检查网络连接';
+      }
+      
+      message.error(errorMessage);
+      
+      // 设置空数据
+      setStats({
+        totalScans: 0,
+        cleanFiles: 0,
+        infectedFiles: 0,
+        suspiciousFiles: 0,
+        privacyProtected: 0
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   /**
    * 页面初始化效果
@@ -146,17 +202,14 @@ const HistoryPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setInitializing(false);
+      // 如果已登录，获取统计数据
+      if (isLoggedIn) {
+        fetchStatistics();
+      }
     }, 100);
     
     return () => clearTimeout(timer);
-  }, []);
-  
-  /**
-   * 导航到登录页面
-   */
-  const goToLogin = () => {
-    navigate('/login', { state: { from: '/history' } });
-  };
+  }, [isLoggedIn]);
 
   /**
    * 处理登录按钮点击，显示登录模态框
@@ -172,19 +225,8 @@ const HistoryPage = () => {
    */
   const handleLogin = (userData) => {
     setUser(userData);
-  };
-  /**
-   * 示例统计数据
-   * 
-   * 实际应用中应该从API获取
-   * 包含总扫描次数、安全文件数、受感染文件数等信息
-   */
-  const stats = {
-    totalScans: 42,
-    cleanFiles: 38,
-    infectedFiles: 2,
-    suspiciousFiles: 2,
-    privacyProtected: 40,
+    // 登录成功后获取统计数据
+    fetchStatistics();
   };
   
   // 如果页面正在初始化，显示加载状态
@@ -237,6 +279,7 @@ const HistoryPage = () => {
                     title="总扫描次数" 
                     value={stats.totalScans} 
                     prefix={<FileProtectOutlined />} 
+                    loading={statsLoading}
                   />
                 </StatisticItem>
               </Col>
@@ -248,6 +291,7 @@ const HistoryPage = () => {
                     value={stats.cleanFiles} 
                     valueStyle={{ color: '#52c41a' }}
                     prefix={<CheckCircleOutlined />} 
+                    loading={statsLoading}
                   />
                 </StatisticItem>
               </Col>
@@ -259,6 +303,7 @@ const HistoryPage = () => {
                     value={stats.infectedFiles} 
                     valueStyle={{ color: '#f5222d' }}
                     prefix={<CloseCircleOutlined />} 
+                    loading={statsLoading}
                   />
                 </StatisticItem>
               </Col>
@@ -270,6 +315,7 @@ const HistoryPage = () => {
                     value={stats.suspiciousFiles} 
                     valueStyle={{ color: '#faad14' }}
                     prefix={<WarningOutlined />} 
+                    loading={statsLoading}
                   />
                 </StatisticItem>
               </Col>
@@ -281,10 +327,15 @@ const HistoryPage = () => {
             <Row>
               <Col span={24}>
                 <StatisticItem>
-                  <Text>
-                    <FileProtectOutlined style={{ color: 'var(--color-primary)' }} /> 隐私保护扫描: 
-                    <Text strong> {stats.privacyProtected}</Text> / {stats.totalScans} ({Math.round(stats.privacyProtected / stats.totalScans * 100)}%)
-                  </Text>
+                  {statsLoading ? (
+                    <Spin size="small" />
+                  ) : (
+                    <Text>
+                      <FileProtectOutlined style={{ color: 'var(--color-primary)' }} /> 隐私保护扫描: 
+                      <Text strong> {stats.privacyProtected}</Text> / {stats.totalScans} (
+                        {stats.totalScans ? Math.round(stats.privacyProtected / stats.totalScans * 100) : 0}%)
+                    </Text>
+                  )}
                 </StatisticItem>
               </Col>
             </Row>

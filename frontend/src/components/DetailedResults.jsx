@@ -15,7 +15,7 @@ import React, { useState } from 'react';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入Ant Design组件
-import { Card, Table, Tag, Button, Collapse, Typography, Tooltip, Progress, Divider } from 'antd';
+import { Card, Table, Tag, Button, Collapse, Typography, Tooltip, Progress, Divider, message } from 'antd';
 // 导入Ant Design图标
 import { 
   CheckCircleOutlined, 
@@ -24,7 +24,8 @@ import {
   SafetyOutlined,
   LockOutlined,
   FileProtectOutlined,
-  WarningOutlined
+  WarningOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 
 // 从Typography组件中解构出需要的子组件
@@ -153,6 +154,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
     scanDuration: '1.2 秒',
     detectionMethod: 'PSI协议',
     fileType: 'Windows可执行文件',
+    fileHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     recommendations: [],
   };
   
@@ -218,6 +220,20 @@ const DetailedResults = ({ scanResults, fileName }) => {
   };
   
   /**
+   * 复制内容到剪贴板
+   */
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        message.success('已复制到剪贴板');
+      },
+      () => {
+        message.error('复制失败，请手动复制');
+      }
+    );
+  };
+  
+  /**
    * 文件详情表格列配置
    */
   const fileDetailsColumns = [
@@ -231,6 +247,28 @@ const DetailedResults = ({ scanResults, fileName }) => {
       title: '值',
       dataIndex: 'value',
       key: 'value',
+      render: (text, record) => {
+        // 为哈希值添加特殊处理
+        if (record.property === 'SHA-256哈希值') {
+          return (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Text code ellipsis style={{ maxWidth: '300px' }}>{text}</Text>
+              {text && text !== '未计算哈希值' && (
+                <Tooltip title="复制哈希值">
+                  <Button 
+                    type="text" 
+                    icon={<CopyOutlined />} 
+                    size="small" 
+                    onClick={() => copyToClipboard(text)}
+                    style={{ marginLeft: 8 }}
+                  />
+                </Tooltip>
+              )}
+            </div>
+          );
+        }
+        return text;
+      },
     },
   ];
   
@@ -244,6 +282,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
     { key: '4', property: '扫描时间', value: results.scanTime },
     { key: '5', property: '扫描持续时间', value: results.scanDuration },
     { key: '6', property: '检测方法', value: results.detectionMethod },
+    { key: '7', property: 'SHA-256哈希值', value: results.fileHash || '未计算哈希值' },
   ];
   
   /**

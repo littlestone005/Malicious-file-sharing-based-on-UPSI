@@ -19,7 +19,9 @@ import {
   Badge,
   Tabs,
   Alert,
-  message
+  message,
+  Tooltip,
+  Input
 } from 'antd';
 import { 
   HomeOutlined, 
@@ -34,7 +36,8 @@ import {
   FileOutlined,
   BankOutlined,
   LoginOutlined,
-  LockOutlined
+  LockOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import DetailedResults from '../components/DetailedResults';
 import { UserContext } from '../App';
@@ -79,9 +82,6 @@ const EnterpriseTag = styled(Badge)`
 
 /**
  * 登录提醒样式
- * 
- * 设置底部外边距
- * 用于显示未登录提醒消息
  */
 const LoginAlert = styled(Alert)`
   margin-bottom: 20px;
@@ -89,9 +89,6 @@ const LoginAlert = styled(Alert)`
 
 /**
  * 登录提示容器样式
- * 
- * 设置文本居中、内边距和背景颜色
- * 用于替代扫描结果内容显示登录提示
  */
 const LoginPromptContainer = styled.div`
   text-align: center;
@@ -129,7 +126,6 @@ const ResultsPage = ({ scanResults }) => {
 
   /**
    * 页面初始化效果
-   * 
    * 短暂延迟后将页面设置为已初始化状态，防止闪烁
    */
   useEffect(() => {
@@ -157,6 +153,18 @@ const ResultsPage = ({ scanResults }) => {
       setLoading(false);
     }, 1000);
   }, [scanId, scanResults, isEnterpriseUser]);
+  
+  // 复制到剪贴板
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        message.success('已复制到剪贴板');
+      },
+      () => {
+        message.error('复制失败');
+      }
+    );
+  };
   
   // 返回扫描页面
   const handleBack = () => {
@@ -201,6 +209,7 @@ const ResultsPage = ({ scanResults }) => {
           threatType: isMalicious ? ['Trojan', 'Spyware'][i % 2] : null,
           confidence: isMalicious ? Math.floor(Math.random() * 30) + 70 : null,
           detectionMethod: isMalicious ? 'PSI' : null,
+          fileHash: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b${i.toString().padStart(3, '0')}`,
         });
       }
       
@@ -249,6 +258,7 @@ const ResultsPage = ({ scanResults }) => {
         threatType: isMalicious ? ['Trojan', 'Spyware', 'Ransomware'][index % 3] : null,
         confidence: isMalicious ? Math.floor(Math.random() * 30) + 70 : null,
         detectionMethod: isMalicious ? 'PSI' : null,
+        fileHash: file.hash || `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b${index.toString().padStart(3, '0')}`,
       };
     });
     

@@ -13,6 +13,8 @@ class ScanListResponse(BaseModel):
     scan_date: datetime
     status: str
     is_malicious: Optional[bool] = None
+    privacy_enabled: Optional[bool] = None
+    result_details: Optional[Dict[str, Any]] = None
     
     class Config:
         orm_mode = True
@@ -27,4 +29,12 @@ class ScanResponse(BaseModel):
     result_details: Optional[Dict[str, Any]] = None
     
     class Config:
-        orm_mode = True 
+        orm_mode = True
+
+class ScanStatisticsResponse(BaseModel):
+    """扫描统计数据响应"""
+    totalScans: int
+    cleanFiles: int
+    infectedFiles: int
+    suspiciousFiles: int
+    privacyProtected: int 

@@ -176,13 +176,26 @@ export const scanAPI = {
 
   // 获取扫描历史
   getScanHistory: async (skip = 0, limit = 100) => {
-    return api.get(`/scans?skip=${skip}&limit=${limit}`);
+    return api.get(`/scans/?skip=${skip}&limit=${limit}`);
   },
 
   // 获取扫描详情
   getScanDetail: async (scanId) => {
     return api.get(`/scans/${scanId}`);
   },
+  
+  // 获取扫描统计数据
+  getScanStatistics: async () => {
+    return api.get('/scans/statistics/');
+  },
+  
+  // 提交文件哈希进行检测（SHA-256）
+  checkFileHashes: async (fileHashes, privacyEnabled = true) => {
+    return api.post('/scans/check-hashes', {
+      hashes: fileHashes,
+      privacy_enabled: privacyEnabled
+    });
+  }
 };
 
 export default api; 

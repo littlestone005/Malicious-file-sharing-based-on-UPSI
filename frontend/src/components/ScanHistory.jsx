@@ -39,10 +39,13 @@ import {
   WarningOutlined,
   FilterOutlined,
   ExportOutlined,
-  EyeOutlined
+  EyeOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 // 导入日期处理库
 import moment from 'moment';
+// 导入API工具
+import { scanAPI } from '../utils/api';
 
 // 从Typography组件中解构出需要的子组件
 const { Title, Text } = Typography;
@@ -116,6 +119,14 @@ const ScanHistory = () => {
   const [loading, setLoading] = useState(false);
   // 选中行的键值数组
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  // 扫描历史记录数据
+  const [historyData, setHistoryData] = useState([]);
+  // 分页设置
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
   // 筛选条件状态
   const [filters, setFilters] = useState({
     dateRange: null,
@@ -126,58 +137,221 @@ const ScanHistory = () => {
   const [filteredData, setFilteredData] = useState([]);
   
   /**
-   * 示例历史数据
-   * 
-   * 实际应用中应该从API获取
-   * 包含文件名、类型、扫描时间、状态等信息
+   * 从后端API获取扫描历史数据
    */
-  const historyData = [
-    {
-      key: '1',
-      fileName: 'document.pdf',
-      fileType: 'PDF文档',
-      scanDate: '2023-11-15 14:30:22',
-      status: 'clean',
-      threatLevel: 'none',
-      privacyProtected: true,
-    },
-    {
-      key: '2',
-      fileName: 'setup.exe',
-      fileType: 'Windows可执行文件',
-      scanDate: '2023-11-14 10:15:45',
-      status: 'infected',
-      threatLevel: 'high',
-      privacyProtected: true,
-    },
-    {
-      key: '3',
-      fileName: 'script.js',
-      fileType: 'JavaScript文件',
-      scanDate: '2023-11-13 09:22:18',
-      status: 'suspicious',
-      threatLevel: 'medium',
-      privacyProtected: true,
-    },
-    {
-      key: '4',
-      fileName: 'image.jpg',
-      fileType: '图像文件',
-      scanDate: '2023-11-12 16:45:30',
-      status: 'clean',
-      threatLevel: 'none',
-      privacyProtected: true,
-    },
-    {
-      key: '5',
-      fileName: 'archive.zip',
-      fileType: '压缩文件',
-      scanDate: '2023-11-11 11:10:05',
-      status: 'clean',
-      threatLevel: 'none',
-      privacyProtected: false,
-    },
-  ];
+  const fetchScanHistory = async () => {
+    try {
+      setLoading(true);
+      const skip = (pagination.current - 1) * pagination.pageSize;
+      const response = await scanAPI.getScanHistory(skip, pagination.pageSize);
+      
+      console.log('API原始返回数据:', response); // 调试日志
+      
+      // 处理API返回的数据
+      const formattedData = response.map(item => {
+        // 确保result_details存在且是对象
+        let resultDetails = item.result_details;
+        
+        // 如果是字符串，尝试解析
+        if (typeof resultDetails === 'string') {
+          try {
+            resultDetails = JSON.parse(resultDetails);
+          } catch (e) {
+            console.error('解析扫描结果失败:', e);
+            resultDetails = {};
+          }
+        }
+        
+        // 确保是对象
+        resultDetails = resultDetails || {};
+        
+        // 获取威胁详情
+        let threatDetails = resultDetails.threat_details;
+        if (typeof threatDetails === 'string') {
+          try {
+            threatDetails = JSON.parse(threatDetails);
+          } catch (e) {
+            threatDetails = {};
+          }
+        }
+        
+        // 确保威胁详情是对象
+        threatDetails = threatDetails || {};
+
+        // 判断恶意状态 - 直接使用API返回的is_malicious字段
+        const isMalicious = item.is_malicious === true;
+        const severity = threatDetails.severity || '';
+        
+        // 确定状态
+        let status;
+        if (isMalicious) {
+          status = severity === 'high' ? 'infected' : 'suspicious';
+        } else {
+          status = 'clean';
+        }
+        
+        // 处理隐私保护状态 - 直接使用API返回的privacy_enabled字段
+        let privacyEnabled;
+        if (typeof item.privacy_enabled === 'boolean') {
+          privacyEnabled = item.privacy_enabled;
+        } else if (item.privacy_enabled === 1 || item.privacy_enabled === '1' || item.privacy_enabled === 'true') {
+          privacyEnabled = true;
+        } else {
+          privacyEnabled = false;
+        }
+        
+        console.log('处理后记录:', {
+          id: item.id,
+          is_malicious: isMalicious,
+          status: status,
+          privacy_enabled: item.privacy_enabled,
+          privacyEnabled: privacyEnabled
+        }); // 调试日志
+        
+        return {
+          key: item.id.toString(),
+          id: item.id,
+          fileName: item.file_name,
+          fileType: getFileType(item.file_name),
+          scanDate: moment(item.scan_date).format('YYYY-MM-DD HH:mm:ss'),
+          status: status,
+          threatLevel: severity || 'none',
+          privacyProtected: privacyEnabled,
+          resultDetails: resultDetails
+        };
+      });
+      
+      setHistoryData(formattedData);
+      setFilteredData(formattedData);
+      setPagination({
+        ...pagination,
+        total: response.length + skip // 简单估算总数
+      });
+    } catch (error) {
+      console.error('获取扫描历史失败:', error);
+      let errorMessage = '获取扫描历史记录失败，将显示示例数据';
+      
+      // 根据错误类型提供更具体的提示
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = '会话已过期，请重新登录';
+        } else if (error.response.status === 422) {
+          errorMessage = '数据格式错误，请联系管理员';
+        } else if (error.response.status >= 500) {
+          errorMessage = '服务器错误，请稍后再试';
+        }
+      } else if (error.request) {
+        errorMessage = '无法连接到服务器，请检查网络连接';
+      }
+      
+      message.error(errorMessage);
+      
+      // 设置示例数据
+      const exampleData = [
+        {
+          key: '1',
+          id: 1,
+          fileName: 'document.pdf',
+          fileType: 'PDF文档',
+          scanDate: moment().subtract(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
+          status: 'clean',
+          threatLevel: 'none',
+          privacyProtected: true,
+          resultDetails: { is_malicious: false, scan_method: 'psi' }
+        },
+        {
+          key: '2',
+          id: 2,
+          fileName: 'setup.exe',
+          fileType: '可执行文件',
+          scanDate: moment().subtract(2, 'days').format('YYYY-MM-DD HH:mm:ss'),
+          status: 'infected',
+          threatLevel: 'high',
+          privacyProtected: true,
+          resultDetails: { 
+            is_malicious: true, 
+            scan_method: 'psi',
+            threat_details: {
+              type: 'Trojan',
+              severity: 'high',
+              description: 'Trojan horse that steals banking credentials'
+            }
+          }
+        },
+        {
+          key: '3',
+          id: 3,
+          fileName: 'script.js',
+          fileType: 'JavaScript文件',
+          scanDate: moment().subtract(3, 'days').format('YYYY-MM-DD HH:mm:ss'),
+          status: 'suspicious',
+          threatLevel: 'medium',
+          privacyProtected: true,
+          resultDetails: { 
+            is_malicious: true, 
+            scan_method: 'psi',
+            threat_details: {
+              type: 'Spyware',
+              severity: 'medium',
+              description: 'JavaScript code with suspicious behavior pattern'
+            }
+          }
+        }
+      ];
+      
+      setHistoryData(exampleData);
+      setFilteredData(exampleData);
+      setPagination({
+        ...pagination,
+        total: exampleData.length
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  /**
+   * 根据文件名获取文件类型
+   * 
+   * @param {string} fileName - 文件名
+   * @returns {string} 文件类型描述
+   */
+  const getFileType = (fileName) => {
+    const extension = fileName.split('.').pop().toLowerCase();
+    const fileTypes = {
+      'pdf': 'PDF文档',
+      'doc': 'Word文档',
+      'docx': 'Word文档',
+      'xls': 'Excel表格',
+      'xlsx': 'Excel表格',
+      'ppt': 'PowerPoint演示文稿',
+      'pptx': 'PowerPoint演示文稿',
+      'txt': '文本文件',
+      'jpg': '图像文件',
+      'jpeg': '图像文件',
+      'png': '图像文件',
+      'gif': '图像文件',
+      'mp3': '音频文件',
+      'mp4': '视频文件',
+      'zip': '压缩文件',
+      'rar': '压缩文件',
+      'exe': '可执行文件',
+      'dll': '动态链接库',
+      'js': 'JavaScript文件',
+      'py': 'Python文件',
+      'html': 'HTML文件',
+      'css': 'CSS文件'
+    };
+    
+    return fileTypes[extension] || `${extension.toUpperCase()}文件`;
+  };
+  
+  /**
+   * 初始加载和刷新数据
+   */
+  useEffect(() => {
+    fetchScanHistory();
+  }, [pagination.current, pagination.pageSize]);
   
   /**
    * 应用筛选条件的副作用
@@ -186,6 +360,8 @@ const ScanHistory = () => {
    * 包括日期范围、状态和搜索文本筛选
    */
   useEffect(() => {
+    if (!historyData.length) return;
+    
     setLoading(true);
     
     // 筛选数据
@@ -223,7 +399,7 @@ const ScanHistory = () => {
     if (result.length === 0 && (filters.dateRange || filters.status !== 'all' || filters.searchText)) {
       message.info('没有符合筛选条件的记录');
     }
-  }, [filters]);
+  }, [filters, historyData]);
   
   /**
    * 根据扫描状态生成对应的标签
@@ -308,11 +484,14 @@ const ScanHistory = () => {
       title: '隐私保护',
       dataIndex: 'privacyProtected',
       key: 'privacyProtected',
-      render: (isProtected) => (
-        isProtected ? 
-          <Tag color="blue" icon={<CheckCircleOutlined />}>已启用</Tag> : 
-          <Tag color="default">未启用</Tag>
-      ),
+      render: (isProtected) => {
+        console.log('渲染隐私保护:', isProtected);
+        return (
+          isProtected === true ? 
+            <Tag color="blue" icon={<CheckCircleOutlined />}>已启用</Tag> : 
+            <Tag color="default">未启用</Tag>
+        );
+      },
       filters: [
         { text: '已启用', value: true },
         { text: '未启用', value: false },
@@ -547,7 +726,9 @@ const ScanHistory = () => {
           dataSource={filteredData}
           loading={loading}
           pagination={{ 
-            pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showTotal: (total) => `共 ${total} 条记录`
           }}
           locale={{
@@ -557,6 +738,10 @@ const ScanHistory = () => {
                 description="暂无扫描记录"
               />
             )
+          }}
+          onChange={(pagination) => {
+            setPagination(pagination);
+            fetchScanHistory();
           }}
         />
       </HistoryCard>

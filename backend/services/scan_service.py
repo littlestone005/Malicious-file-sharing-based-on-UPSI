@@ -185,4 +185,79 @@ async def scan_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Scan failed: {str(e)}"
-        ) 
+        )
+
+async def get_scan_statistics(db: Session, user_id: int) -> dict:
+    """
+    获取用户的扫描统计数据
+    
+    Args:
+        db: 数据库会话
+        user_id: 用户ID
+        
+    Returns:
+        包含各类统计数据的字典
+    """
+    # 总扫描次数 - 仅当前用户
+    total_scans = db.query(ScanRecord).filter(ScanRecord.user_id == user_id).count()
+    
+    # 获取带有威胁检测结果的记录 - 仅当前用户
+    scan_records = db.query(ScanRecord).filter(ScanRecord.user_id == user_id).all()
+    
+    # 初始化计数器
+    clean_files = 0
+    infected_files = 0
+    suspicious_files = 0
+    privacy_protected = 0
+    
+    # 遍历记录并计数
+    for record in scan_records:
+        # 隐私保护计数
+        if record.privacy_enabled:
+            privacy_protected += 1
+            
+        # 根据结果状态计数
+        if record.result:
+            # 尝试解析result字段，它可能是字符串或者已经是字典
+            if isinstance(record.result, str):
+                try:
+                    result_dict = json.loads(record.result)
+                except (json.JSONDecodeError, TypeError):
+                    # 如果解析失败，假设是安全的
+                    clean_files += 1
+                    continue
+            else:
+                result_dict = record.result
+            
+            # 检查是否恶意
+            is_malicious = result_dict.get('is_malicious', False)
+            
+            # 获取威胁详情
+            threat_details = result_dict.get('threat_details', {})
+            if isinstance(threat_details, str):
+                try:
+                    threat_details = json.loads(threat_details)
+                except (json.JSONDecodeError, TypeError):
+                    threat_details = {}
+            
+            severity = threat_details.get('severity', '')
+            
+            if is_malicious:
+                if severity == 'high':
+                    infected_files += 1
+                else:
+                    suspicious_files += 1
+            else:
+                clean_files += 1
+        else:
+            # 如果没有结果，假设是安全的
+            clean_files += 1
+    
+    # 返回统计数据
+    return {
+        "totalScans": total_scans,
+        "cleanFiles": clean_files,
+        "infectedFiles": infected_files,
+        "suspiciousFiles": suspicious_files,
+        "privacyProtected": privacy_protected
+    } 

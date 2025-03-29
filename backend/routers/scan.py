@@ -1,17 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+import json
+import logging
 
 from backend.core.security import get_current_user
-from backend.schemas.scan import ScanCreateRequest, ScanResponse, ScanListResponse
+from backend.schemas.scan import ScanCreateRequest, ScanResponse, ScanListResponse, ScanStatisticsResponse
 from backend.services.scan_service import (
     save_upload_file, 
     scan_file, 
     get_scan_records, 
-    get_scan_record
+    get_scan_record,
+    get_scan_statistics
 )
 from backend.db.session import get_db
 from backend.models.user import User
+
+# 设置日志
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/scans", tags=["file scanning"])
 
@@ -68,6 +74,30 @@ async def list_scan_records(
     获取用户的扫描记录列表
     """
     records = await get_scan_records(db, user_id=current_user.id, skip=skip, limit=limit)
+    
+    # 处理记录中的result字段，确保它是有效的JSON对象
+    for record in records:
+        if record.result and isinstance(record.result, str):
+            try:
+                record.result = json.loads(record.result)
+            except (json.JSONDecodeError, TypeError):
+                # 如果解析失败，设置为空对象
+                record.result = {}
+        
+        # 确保result是字典
+        if not isinstance(record.result, dict):
+            record.result = {}
+        
+        # 设置is_malicious属性，从result字段中获取
+        record.is_malicious = record.result.get("is_malicious", False)
+        
+        # 设置privacy_enabled属性
+        # ScanListResponse模型中没有privacy_enabled字段，需要在返回之前手动加入
+        setattr(record, "privacy_enabled", record.privacy_enabled)
+        
+        # 将result作为属性保存，方便前端使用
+        setattr(record, "result_details", record.result)
+    
     return records
 
 @router.get("/{scan_id}", response_model=ScanResponse)
@@ -95,11 +125,51 @@ async def get_scan_detail(
             detail="没有权限访问此记录"
         )
     
+    # 处理result字段，确保它是有效的JSON对象
+    if record.result and isinstance(record.result, str):
+        try:
+            record.result = json.loads(record.result)
+        except (json.JSONDecodeError, TypeError):
+            # 如果解析失败，设置为空对象
+            record.result = {}
+    
+    # 确保result是字典
+    result = record.result or {}
+    is_malicious = False
+    
+    # 尝试获取is_malicious字段
+    if isinstance(result, dict):
+        is_malicious = result.get("is_malicious", False)
+    
     return {
         "id": record.id,
         "file_name": record.file_name,
         "scan_date": record.scan_date,
-        "is_malicious": record.result and record.result.get("is_malicious", False) if record.result else False,
+        "is_malicious": is_malicious,
         "privacy_enabled": record.privacy_enabled,
-        "result_details": record.result
-    } 
+        "result_details": result
+    }
+
+@router.get("/statistics/", response_model=None)
+async def get_user_scan_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取用户的扫描统计数据
+    
+    返回总扫描数、安全文件数、威胁文件数、可疑文件数和隐私保护使用次数
+    """
+    try:
+        statistics = await get_scan_statistics(db, current_user.id)
+        return statistics
+    except Exception as e:
+        logger.error(f"获取扫描统计数据失败: {str(e)}")
+        # 发生错误时返回空数据
+        return {
+            "totalScans": -1,
+            "cleanFiles": -1,
+            "infectedFiles": -1,
+            "suspiciousFiles": -1,
+            "privacyProtected": -1
+        } 

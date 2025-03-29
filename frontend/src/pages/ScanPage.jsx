@@ -11,13 +11,14 @@
  */
 
 import { useState, useContext, useEffect } from 'react';
-import { Typography, Card, Steps, Button, Badge, Alert, Spin } from 'antd';// 导入Ant Design组件
+import { Typography, Card, Steps, Button, Badge, Alert, Spin, message } from 'antd';// 导入Ant Design组件
 import { useNavigate } from 'react-router-dom';// 导入路由导航钩子
 import { FileAddOutlined, ScanOutlined, SafetyCertificateOutlined, BankOutlined, LoginOutlined } from '@ant-design/icons';// 导入Ant Design图标
 import styled from 'styled-components';// 导入样式组件库
 import FileUploader from '../components/FileUploader';// 导入文件上传器组件
 import { UserContext } from '../App';// 导入用户上下文
 import LoginModal from '../components/LoginModal';
+import { scanAPI } from '../utils/api';// 导入API工具
 
 // 从Typography组件中解构出需要的子组件
 const { Title, Paragraph } = Typography;
@@ -148,19 +149,51 @@ const ScanPage = ({ setScanResults }) => {
    * 
    * @param {Object} results - 扫描结果数据
    */
-  const handleFilesProcessed = (results) => {
-    // 设置扫描结果
-    setScanResults(results);
-    // 更新步骤到"结果"
-    setCurrentStep(2);
-    
-    // 生成一个随机的扫描ID
-    const scanId = Math.random().toString(36).substring(2, 15);
-    
-    // 短暂延迟后导航到结果页面
-    setTimeout(() => {
-      navigate(`/results/${scanId}`);
-    }, 1000);
+  const handleFilesProcessed = async (results) => {
+    try {
+      // 更新步骤到"扫描中"
+      setCurrentStep(1);
+      
+      // 提取文件哈希信息
+      const fileHashes = results.hashes.map(file => ({
+        hash: file.hash,
+        fileName: file.fileName,
+        fileSize: file.fileSize,
+        fileType: file.fileType
+      }));
+      
+      console.log('提交以下文件哈希进行检测:', fileHashes);
+      
+      // 调用后端API检测文件哈希
+      const response = await scanAPI.checkFileHashes(fileHashes, results.usePSI);
+      console.log('检测结果:', response);
+      
+      // 将API返回的结果与原始文件信息合并
+      const mergedResults = {
+        ...results,
+        scanId: response.scan_id || Math.random().toString(36).substring(2, 15),
+        detectionResults: response.results || [],
+        timestamp: new Date().toISOString()
+      };
+      
+      // 设置扫描结果
+      setScanResults(mergedResults);
+      
+      // 更新步骤到"结果"
+      setCurrentStep(2);
+      
+      // 短暂延迟后导航到结果页面
+      setTimeout(() => {
+        navigate(`/results/${mergedResults.scanId}`);
+      }, 1000);
+    } catch (error) {
+      console.error('扫描文件失败:', error);
+      message.error('文件扫描失败，请重试');
+      // 重置步骤到"选择文件"
+      setCurrentStep(0);
+      // 关闭加载状态
+      setIsLoading(false);
+    }
   };
 
   /**

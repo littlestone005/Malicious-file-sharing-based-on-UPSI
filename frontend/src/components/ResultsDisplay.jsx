@@ -11,9 +11,9 @@
  */
 
 // 导入Ant Design组件
-import { Table, Tag, Card, Typography, Statistic, Row, Col, Alert } from 'antd';
+import { Table, Tag, Card, Typography, Statistic, Row, Col, Alert, Button, Tooltip, message } from 'antd';
 // 导入Ant Design图标
-import { CheckCircleOutlined, CloseCircleOutlined, LockOutlined, WarningOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, LockOutlined, WarningOutlined, CopyOutlined } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
 // 导入ECharts图表组件
@@ -139,6 +139,22 @@ const ResultsDisplay = ({ results }) => {
   };
 
   /**
+   * 复制内容到剪贴板
+   * 
+   * @param {string} text - 要复制的文本内容
+   */
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        message.success('已复制到剪贴板');
+      },
+      () => {
+        message.error('复制失败，请手动复制');
+      }
+    );
+  };
+
+  /**
    * 表格列配置
    * 
    * 定义详细结果表格的列和数据渲染方式
@@ -178,8 +194,21 @@ const ResultsDisplay = ({ results }) => {
       title: 'Hash (SHA-256)',
       dataIndex: 'hash',
       key: 'hash',
-      // 使用等宽字体显示哈希值，并在空间不足时省略
-      render: (hash) => <Text code ellipsis>{hash}</Text>,
+      // 改进哈希值显示，添加复制按钮
+      render: (hash) => (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Text code ellipsis style={{ maxWidth: '200px' }}>{hash}</Text>
+          <Tooltip title="复制哈希值">
+            <Button 
+              type="text" 
+              icon={<CopyOutlined />} 
+              size="small" 
+              onClick={() => copyToClipboard(hash)}
+              style={{ marginLeft: 8 }}
+            />
+          </Tooltip>
+        </div>
+      ),
     },
   ];
 
