@@ -15,8 +15,8 @@ def start_servers():
     os.makedirs('backend/logs', exist_ok=True)
     
     # 启动前端服务器
-    frontend_cmd = 'cmd /k "cd frontend && npm run dev"'
-    subprocess.Popen(f'start {frontend_cmd}', shell=True)
+    frontend_cmd = '"cd frontend && npm run dev"'
+    subprocess.Popen(f'start cmd /k {frontend_cmd}', shell=True)
 
     # 启动后端服务器
     backend_cmd = f'"{sys.executable}" -m backend.main'
