@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 """
-数据库初始化脚本 (简化版)
-用于重置数据库到初始状态，保留基本用户账号
-使用直接的SQLite API以确保表创建成功
+简化版数据库初始化脚本
+删除原有数据库并创建新的数据库，添加基本用户账号
 """
 
 import os
 import sys
-import argparse
 import logging
 import sqlite3
-import json
 import hashlib
+from datetime import datetime
+import socket
 import subprocess
 import time
-from datetime import datetime
 
 # 设置日志
 logging.basicConfig(
@@ -42,17 +40,23 @@ except ImportError:
         """简单的密码哈希函数"""
         return hashlib.sha256(password.encode()).hexdigest()
 
-def parse_args():
-    """解析命令行参数"""
-    parser = argparse.ArgumentParser(description="初始化数据库")
-    parser.add_argument('--force', action='store_true', help='强制重新创建数据库')
-    parser.add_argument('--keep-data', action='store_true', help='保留扫描记录数据')
-    parser.add_argument('--restart-backend', action='store_true', help='重启后端服务')
-    return parser.parse_args()
-
 def get_db_path():
     """获取数据库文件路径"""
     return os.path.join(data_dir, 'malware_detection.db')
+
+def delete_database():
+    """删除现有数据库文件"""
+    db_path = get_db_path()
+    if os.path.exists(db_path):
+        try:
+            os.remove(db_path)
+            logger.info(f"已删除旧数据库文件: {db_path}")
+            return True
+        except Exception as e:
+            logger.error(f"删除数据库文件失败: {e}")
+            logger.error("可能有其他程序正在使用数据库，请关闭后重试")
+            return False
+    return True
 
 def get_connection():
     """获取数据库连接"""
@@ -120,92 +124,59 @@ def create_tables(conn):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_scan_records_status ON scan_records (status)")
     
     conn.commit()
-    
-    # 验证表创建
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    tables = [row[0] for row in cursor.fetchall()]
-    logger.info(f"已创建表: {', '.join(tables)}")
-    
-    return "users" in tables and "known_threats" in tables and "scan_records" in tables
-
-def reset_users(conn, force=False):
-    """重置用户表，添加基本用户"""
-    cursor = conn.cursor()
-    
-    if force:
-        # 删除所有用户
-        cursor.execute("DELETE FROM users")
-        logger.info("已删除所有用户")
-    
-    # 检查admin用户是否存在
-    cursor.execute("SELECT * FROM users WHERE username = ?", ("admin",))
-    admin_exists = cursor.fetchone()
-    
-    if not admin_exists or force:
-        # 创建管理员用户
-        created_at = datetime.utcnow().isoformat()
-        preferences = json.dumps({"language": "zh-CN", "theme": "light"})
-        notification_settings = json.dumps({"email_alerts": True, "scan_notifications": True})
-        
-        cursor.execute("""
-        INSERT OR REPLACE INTO users 
-        (username, email, password, password_hash, created_at, is_active, preferences, notification_settings)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            "admin", 
-            "admin@example.com", 
-            "admin", 
-            get_password_hash("admin"),
-            created_at,
-            1,
-            preferences,
-            notification_settings
-        ))
-        logger.info("已添加/更新admin用户")
-    
-    # 检查testuser用户是否存在
-    cursor.execute("SELECT * FROM users WHERE username = ?", ("testuser",))
-    testuser_exists = cursor.fetchone()
-    
-    if not testuser_exists or force:
-        # 创建测试用户
-        created_at = datetime.utcnow().isoformat()
-        preferences = json.dumps({"language": "en-US", "theme": "dark"})
-        notification_settings = json.dumps({"email_alerts": False, "scan_notifications": True})
-        
-        cursor.execute("""
-        INSERT OR REPLACE INTO users 
-        (username, email, password, password_hash, created_at, is_active, preferences, notification_settings)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            "testuser", 
-            "test@example.com", 
-            "test123", 
-            get_password_hash("test123"),
-            created_at,
-            1,
-            preferences,
-            notification_settings
-        ))
-        logger.info("已添加/更新testuser用户")
-    
-    conn.commit()
-    
-    # 验证用户数
-    cursor.execute("SELECT COUNT(*) FROM users")
-    user_count = cursor.fetchone()[0]
-    logger.info(f"当前用户总数: {user_count}")
-    
+    logger.info("已创建数据库表结构")
     return True
 
-def reset_threats(conn, force=False):
-    """重置威胁特征表，添加基本威胁数据"""
+def add_default_users(conn):
+    """添加默认用户"""
     cursor = conn.cursor()
     
-    if force:
-        # 删除所有威胁
-        cursor.execute("DELETE FROM known_threats")
-        logger.info("已删除所有威胁特征数据")
+    # 创建管理员用户
+    created_at = datetime.utcnow().isoformat()
+    preferences = '{"language": "zh-CN", "theme": "light"}'
+    notification_settings = '{"email_alerts": true, "scan_notifications": true}'
+    
+    cursor.execute("""
+    INSERT INTO users 
+    (username, email, password, password_hash, created_at, is_active, preferences, notification_settings)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "admin", 
+        "admin@example.com", 
+        "admin", 
+        get_password_hash("admin"),
+        created_at,
+        1,
+        preferences,
+        notification_settings
+    ))
+    
+    # 创建测试用户
+    preferences = '{"language": "en-US", "theme": "dark"}'
+    notification_settings = '{"email_alerts": false, "scan_notifications": true}'
+    
+    cursor.execute("""
+    INSERT INTO users 
+    (username, email, password, password_hash, created_at, is_active, preferences, notification_settings)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        "testuser", 
+        "test@example.com", 
+        "test123", 
+        get_password_hash("test123"),
+        created_at,
+        1,
+        preferences,
+        notification_settings
+    ))
+    
+    conn.commit()
+    logger.info("已添加默认用户: admin, testuser")
+    return True
+
+def add_sample_threats(conn):
+    """添加示例威胁数据"""
+    cursor = conn.cursor()
     
     # 基本威胁数据
     threats = [
@@ -235,10 +206,10 @@ def reset_threats(conn, force=False):
         }
     ]
     
-    # 添加或更新威胁数据
+    # 添加威胁数据
     for threat in threats:
         cursor.execute("""
-        INSERT OR REPLACE INTO known_threats 
+        INSERT INTO known_threats 
         (hash, threat_type, severity, first_seen, last_seen, description)
         VALUES (?, ?, ?, ?, ?, ?)
         """, (
@@ -251,135 +222,80 @@ def reset_threats(conn, force=False):
         ))
     
     conn.commit()
-    
-    # 验证威胁数据
-    cursor.execute("SELECT COUNT(*) FROM known_threats")
-    threat_count = cursor.fetchone()[0]
-    logger.info(f"当前威胁特征数: {threat_count}")
-    
+    logger.info(f"已添加 {len(threats)} 条示例威胁数据")
     return True
 
-def reset_scan_records(conn, keep_data=False):
-    """重置扫描记录，根据需要保留现有数据"""
-    cursor = conn.cursor()
-    
-    if not keep_data:
-        # 删除所有扫描记录
-        cursor.execute("DELETE FROM scan_records")
-        conn.commit()
-        
-        cursor.execute("SELECT COUNT(*) FROM scan_records")
-        record_count = cursor.fetchone()[0]
-        logger.info(f"已删除所有扫描记录，当前记录数: {record_count}")
-    else:
-        cursor.execute("SELECT COUNT(*) FROM scan_records")
-        record_count = cursor.fetchone()[0]
-        logger.info(f"保留现有扫描记录，当前记录数: {record_count}")
-    
-    return True
-
-def safe_delete_db_file():
-    """安全删除数据库文件"""
-    db_path = get_db_path()
-    
-    if os.path.exists(db_path):
-        try:
-            os.remove(db_path)
-            logger.info(f"已删除数据库文件: {db_path}")
-            return True
-        except Exception as e:
-            logger.warning(f"删除数据库文件失败: {e}")
-            logger.warning("可能有其他程序正在使用数据库，请关闭后重试")
-            return False
-    
-    return True
-
-def restart_backend_service():
-    """重启后端服务"""
-    logger.info("尝试重启后端服务...")
-    
-    # 使用taskkill终止所有Python进程(谨慎使用)
+def is_backend_running(port=8000):
+    """检查后端服务是否正在运行"""
     try:
-        # 查找运行backend.main的Python进程
-        find_cmd = 'wmic process where "commandline like \'%backend.main%\' and name like \'%python%\'" get processid'
-        process = subprocess.Popen(find_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, _ = process.communicate()
-        
-        # 提取进程ID
-        lines = output.decode().strip().split('\n')
-        if len(lines) > 1:  # 第一行是标题
-            for line in lines[1:]:
-                if line.strip():
-                    pid = line.strip()
-                    kill_cmd = f'taskkill /F /PID {pid}'
-                    subprocess.run(kill_cmd, shell=True)
-                    logger.info(f"已终止后端进程 PID: {pid}")
-        
-        # 给进程一些时间来终止
-        time.sleep(1)
-        
-        # 启动新的后端进程
-        backend_cmd = f'start cmd /k "{sys.executable}" -m backend.main'
-        subprocess.Popen(backend_cmd, shell=True)
-        logger.info("已启动新的后端服务")
-        
-        # 等待服务启动
-        time.sleep(2)
-        logger.info("后端服务重启完成")
-        return True
-    except Exception as e:
-        logger.error(f"重启后端服务时出错: {e}")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex(('127.0.0.1', port))
+        sock.close()
+        return result == 0  # 如果端口开放，说明服务在运行
+    except:
         return False
 
-def init_db(force=False, keep_data=False, restart_backend=False):
+def is_frontend_running():
+    """检查前端服务是否正在运行
+    
+    检查常见的前端开发服务器端口: 3000(React默认), 3001(Vue默认), 3002(Next.js默认), 5173(Vite默认), 8080(Vue默认)
+    """
+    frontend_ports = [3000, 3001, 3002, 5173, 8080]
+    for port in frontend_ports:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex(('127.0.0.1', port))
+            sock.close()
+            if result == 0:  # 端口开放
+                return True, port
+        except:
+            pass
+    return False, None
+
+def init_db():
     """初始化数据库主函数"""
     start_time = datetime.now()
-    logger.info(f"开始数据库重置 (强制模式: {force}, 保留扫描数据: {keep_data})")
+    logger.info("开始数据库初始化")
     
-    # 强制模式下删除数据库文件
-    if force and not safe_delete_db_file():
+    # 删除旧数据库
+    if not delete_database():
         logger.error("无法删除现有数据库文件，请确保没有其他程序正在使用数据库")
-        logger.info("提示: 可以尝试关闭所有相关应用后重试")
         sys.exit(1)
     
     # 打开数据库连接
     conn = get_connection()
     try:
         # 创建表结构
-        if not create_tables(conn):
-            logger.error("创建表结构失败")
-            sys.exit(1)
+        create_tables(conn)
         
-        # 重置用户数据
-        if not reset_users(conn, force):
-            logger.error("重置用户数据失败")
-            sys.exit(1)
+        # 添加默认用户
+        add_default_users(conn)
         
-        # 重置威胁数据
-        if not reset_threats(conn, force):
-            logger.error("重置威胁特征数据失败")
-            sys.exit(1)
-        
-        # 重置扫描记录
-        if not reset_scan_records(conn, keep_data):
-            logger.error("重置扫描记录失败")
-            sys.exit(1)
+        # 添加示例威胁数据
+        add_sample_threats(conn)
         
         # 计算运行时间
         elapsed = (datetime.now() - start_time).total_seconds()
-        logger.info(f"✅ 数据库已成功重置! (用时: {elapsed:.2f}秒)")
-        logger.info("  - 已重置用户账号，仅保留admin和testuser")
-        logger.info("  - 威胁数据已刷新")
-        if not keep_data:
-            logger.info("  - 所有扫描记录已清除")
+        logger.info(f"✅ 数据库初始化完成! (用时: {elapsed:.2f}秒)")
+        logger.info("  - 数据库已重新创建")
+        logger.info("  - 已添加默认用户: admin, testuser")
+        logger.info("  - 已添加示例威胁数据")
+        logger.info("\n请记得重启后端服务以应用新的数据库!")
         
     finally:
         conn.close()
-    
-    # 重启后端服务（如果需要）
-    if restart_backend:
-        restart_backend_service()
 
 if __name__ == "__main__":
-    args = parse_args()
-    init_db(force=args.force, keep_data=args.keep_data, restart_backend=args.restart_backend)
+    # 检查后端服务是否在运行
+    if is_backend_running():
+        logger.warning("⚠️ 检测到后端服务正在运行!")
+        logger.warning("请先关闭后端服务，否则可能导致问题")
+        exit()
+    init_db()
+
+    if is_frontend_running():
+        # 重启后端服务器
+        backend_cmd = f'"{sys.executable}" -m backend.main'
+        subprocess.Popen(f'start cmd /k {backend_cmd}', shell=True)
