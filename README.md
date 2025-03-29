@@ -49,14 +49,28 @@
 
 ### 启动服务
 
-1. 启动后端
+1. 使用工具脚本快速启动（推荐）
    ```bash
+   # 一键启动前端和后端服务器
+   python tools/launch.py
+   
+   # 初始化数据库
+   python tools/sql_init_db.py
+   
+   # 查看数据库内容
+   python tools/view_db.py
+   # 或使用简化版工具
+   python tools/view_db_for_test.py
+   ```
+   详细的脚本使用说明请参考 `tools/README_SCRIPTS.md` 和 `tools/README_DATABASE.md`。
+
+2. 手动启动
+   ```bash
+   # 启动后端
    cd backend
    python -m backend.main
-   ```
-
-2. 启动前端
-   ```bash
+   
+   # 启动前端
    cd frontend
    npm run dev
    ```
@@ -81,17 +95,33 @@
 │   ├── utils/             # 工具函数
 │   ├── middleware/        # 中间件
 │   ├── tests/             # 测试代码
+│   ├── scripts/           # 维护脚本
 │   ├── uploads/           # 上传文件存储
 │   ├── logs/              # 日志文件
 │   ├── main.py            # 应用入口
 │   └── psi_wrapper.py     # PSI算法包装器
-└── frontend/               # React前端
-    ├── src/               # 源代码
-    │   ├── components/    # 组件
-    │   ├── pages/         # 页面
-    │   └── utils/         # 工具函数
-    ├── public/            # 静态资源
-    └── dist/              # 构建输出
+├── frontend/               # React前端
+│   ├── src/               # 源代码
+│   │   ├── components/    # 组件
+│   │   ├── pages/         # 页面
+│   │   └── utils/         # 工具函数
+│   ├── public/            # 静态资源
+│   └── dist/              # 构建输出
+├── tools/                  # 工具脚本目录
+│   ├── launch.py          # 一键启动前端和后端服务
+│   ├── sql_init_db.py     # 初始化数据库(使用原生SQL)
+│   ├── view_db.py         # 查看数据库内容(详细版)
+│   ├── view_db_for_test.py # 查看数据库内容(简化版)
+│   ├── README_SCRIPTS.md  # 脚本使用指南
+│   └── README_DATABASE.md # 数据库工具使用指南
+├── data/                   # 数据存储目录
+│   ├── malware_detection.db # SQLite数据库
+│   ├── backups/           # 数据库备份
+│   ├── logs/              # 日志文件
+│   └── uploads/           # 上传文件存储
+├── docs/                   # 项目文档
+├── requirements.txt        # Python依赖
+└── .env                    # 环境变量配置
 ```
 
 ## 核心功能
@@ -121,6 +151,21 @@
 - 支持对敏感扫描进行额外加密
 - 完整的用户权限管理
 
+## 数据库结构
+
+项目使用SQLite作为数据库，主要包含以下表：
+
+1. **users** - 用户信息表
+   - 存储用户账户信息，包括用户名、邮箱、密码哈希等
+
+2. **known_threats** - 已知威胁记录表
+   - 存储已知的恶意软件威胁信息，包括文件哈希、威胁类型、严重程度等
+
+3. **scan_records** - 文件扫描记录表
+   - 存储用户的文件扫描记录，包括文件名、扫描结果等
+
+详细的数据库结构和使用说明请参考 `tools/README_DATABASE.md`。
+
 ## 技术亮点
 
 ### 前端技术
@@ -134,7 +179,7 @@
 ### 后端技术
 
 - **FastAPI**: 高性能Web框架
-- **SQLAlchemy**: ORM数据库管理
+- **SQLite**: 轻量级数据库
 - **Pydantic**: 数据验证和序列化
 - **JWT认证**: 安全的用户认证
 - **异步处理**: 高效处理并发请求

@@ -5,7 +5,7 @@ from typing import List
 from backend.core.security import get_current_user
 from backend.schemas.user import UserResponse, UserUpdate
 from backend.services.user_service import get_user, get_users, update_user, deactivate_user
-from backend.database.session import get_db
+from backend.db.session import get_db
 from backend.models.user import User
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])

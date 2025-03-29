@@ -7,7 +7,7 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 sys.path.insert(0, project_root)
 
 from backend.core.security import get_password_hash
-from backend.database.session import SessionLocal
+from backend.db.session import SessionLocal
 from backend.models.user import User
 
 def update_admin_password():

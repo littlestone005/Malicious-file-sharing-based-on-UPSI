@@ -8,15 +8,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from backend.models.base import Base
-from backend.database.session import engine
+from backend.db.session import engine, Base
 from backend.core.config import settings
-from backend.database.init_db import init_db
+# from backend.database.init_db import init_db
+# We'll use tools/init_db.py instead
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
 # 初始化数据库数据
-init_db()
+# init_db()  # 使用tools/init_db.py替代
 
 # 初始化FastAPI应用
 app = FastAPI(

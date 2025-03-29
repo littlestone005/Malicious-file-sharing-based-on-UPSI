@@ -18,8 +18,7 @@ class Settings(BaseSettings):
     # API相关配置
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
-    
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7�?    
     # CORS配置
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
@@ -37,8 +36,7 @@ class Settings(BaseSettings):
     DESCRIPTION: str = "Based on unbalanced PSI for malicious file feature sharing"
     VERSION: str = "0.1.0"
     
-    # 数据库配置
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./data/malware_detection.db")
+    # 数据库配�?    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./data/malware_detection.db")
     
     # 数据库连接池配置
     DB_POOL_SIZE: int = 20
@@ -55,17 +53,13 @@ class Settings(BaseSettings):
     ALLOWED_EXTENSIONS: List[str] = ["exe", "dll", "sys", "zip", "rar", "7z", "pdf", "doc", "docx", "xls", "xlsx"]
     
     # PSI算法配置
-    PSI_FEATURE_COUNT: int = 200  # 每个文件提取的特征数量
-    PSI_MATCH_THRESHOLD: float = 0.6  # PSI匹配阈值
-    
+    PSI_FEATURE_COUNT: int = 200  # 每个文件提取的特征数�?    PSI_MATCH_THRESHOLD: float = 0.6  # PSI匹配阈�?    
     # 缓存配置
     CACHE_ENABLED: bool = True
-    CACHE_EXPIRATION: int = 3600  # 1小时（秒）
-    
+    CACHE_EXPIRATION: int = 3600  # 1小时（秒�?    
     # 安全设置
     REQUIRE_HTTPS: bool = False  # 生产环境设为True
-    PASSWORD_MIN_LENGTH: int = 8  # 密码最小长度
-    
+    PASSWORD_MIN_LENGTH: int = 8  # 密码最小长�?    
     # 调试模式
     DEBUG: bool = False
     
@@ -111,8 +105,7 @@ class Settings(BaseSettings):
     SERVER_KEY: str = os.getenv("SERVER_KEY", "your-secret-key-for-psi-protocol")
     SERVER_PREPROCESSED_CACHE: str = os.getenv("SERVER_PREPROCESSED_CACHE", "./cache/preprocessed.dat")
     
-    # 已知恶意软件样本哈希（用于演示和测试）
-    MALWARE_SIGNATURES: List[str] = [
+    # 已知恶意软件样本哈希（用于演示和测试�?    MALWARE_SIGNATURES: List[str] = [
         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
         "3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278",
@@ -129,9 +122,8 @@ class Settings(BaseSettings):
 # 创建全局配置实例
 settings = Settings()
 
-# 确保必要的目录存在
-def ensure_directories():
-    """确保必要的目录存在"""
+# 确保必要的目录存�?def ensure_directories():
+    """确保必要的目录存�?""
     directories = [
         settings.UPLOAD_PATH,
         settings.SCAN_UPLOAD_PATH,
@@ -156,11 +148,11 @@ def initialize_psi():
         from backend.psi_wrapper import get_psi_wrapper
         wrapper = get_psi_wrapper()
         SERVER_PREPROCESSED = wrapper.server_preprocess(settings.MALWARE_SIGNATURES, settings.SERVER_KEY)
-        print("PSI预处理数据已初始化")
+        print("PSI预处理数据已初始�?)
     except ImportError:
-        print("警告: PSI包装器未找到，跳过PSI初始化")
+        print("警告: PSI包装器未找到，跳过PSI初始�?)
     except Exception as e:
-        print(f"警告: PSI初始化错误: {str(e)}")
+        print(f"警告: PSI初始化错�? {str(e)}")
 
 # 配置变量
-ALGORITHM = "HS256"  # JWT算法
+ALGORITHM = "HS256"  # JWT算法 

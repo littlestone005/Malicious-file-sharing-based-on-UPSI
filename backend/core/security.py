@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from backend.core.config import settings, ALGORITHM
-from backend.database.session import get_db
+from backend.db.session import get_db
 from backend.models.user import User
 
 # 密码哈希管理

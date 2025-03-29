@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any
 
 from backend.models.user import User
 from backend.core.security import verify_password, get_password_hash
-from backend.database.session import get_db
+from backend.db.session import get_db
 
 async def get_user(db: Session, user_id: int) -> Optional[User]:
     """

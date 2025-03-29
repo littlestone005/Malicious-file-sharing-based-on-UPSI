@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from backend.database.session import get_db
+from backend.db.session import get_db
 from backend.models.base import Base
 from backend.main import app
 

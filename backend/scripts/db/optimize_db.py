@@ -26,7 +26,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
 from backend.core.config import settings
-from backend.database.base import Base
 from backend.models.scan_record import ScanRecord
 from backend.models.user import User
 from backend.models.known_threat import KnownThreat

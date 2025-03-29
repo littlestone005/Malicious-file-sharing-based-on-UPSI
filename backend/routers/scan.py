@@ -10,7 +10,7 @@ from backend.services.scan_service import (
     get_scan_records, 
     get_scan_record
 )
-from backend.database.session import get_db
+from backend.db.session import get_db
 from backend.models.user import User
 
 router = APIRouter(prefix="/api/v1/scans", tags=["file scanning"])
