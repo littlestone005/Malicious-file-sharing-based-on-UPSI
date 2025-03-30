@@ -41,6 +41,7 @@ import {
 } from '@ant-design/icons';
 import DetailedResults from '../components/DetailedResults';
 import { UserContext } from '../App';
+import { scanAPI } from '../utils/api';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -125,16 +126,155 @@ const ResultsPage = ({ scanResults }) => {
   const isEnterpriseUser = user?.userType === 'enterprise';
 
   /**
+   * 从API获取扫描详情
+   */
+  const fetchScanDetails = async () => {
+    if (!isLoggedIn || !scanId) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await scanAPI.getScanDetail(scanId);
+      console.log('API返回的扫描详情:', response);
+      
+      // 处理API返回的数据
+      let resultDetails = response.result_details;
+      if (typeof resultDetails === 'string') {
+        try {
+          resultDetails = JSON.parse(resultDetails);
+        } catch (e) {
+          console.error('解析扫描结果失败:', e);
+          resultDetails = {};
+        }
+      }
+      
+      // 确保是对象
+      resultDetails = resultDetails || {};
+      
+      // 确定文件类型
+      const getFileType = (fileName) => {
+        const extension = fileName.split('.').pop().toLowerCase();
+        const fileTypes = {
+          'pdf': 'PDF文档',
+          'doc': 'Word文档',
+          'docx': 'Word文档',
+          'xls': 'Excel表格',
+          'xlsx': 'Excel表格',
+          'ppt': 'PowerPoint演示文稿',
+          'pptx': 'PowerPoint演示文稿',
+          'txt': '文本文件',
+          'jpg': '图像文件',
+          'jpeg': '图像文件',
+          'png': '图像文件',
+          'gif': '图像文件',
+          'mp3': '音频文件',
+          'mp4': '视频文件',
+          'zip': '压缩文件',
+          'rar': '压缩文件',
+          'exe': '可执行文件',
+          'dll': '动态链接库',
+          'js': 'JavaScript文件',
+          'py': 'Python文件',
+          'html': 'HTML文件',
+          'css': 'CSS文件'
+        };
+        
+        return fileTypes[extension] || `${extension.toUpperCase()}文件`;
+      };
+      
+      // 构建前端需要的结果格式
+      const formattedResults = {
+        scanId: response.id,
+        timestamp: response.scan_date,
+        totalFiles: 1, // 单文件扫描
+        maliciousFiles: response.is_malicious ? 1 : 0,
+        safeFiles: response.is_malicious ? 0 : 1,
+        fileResults: [{
+          key: 0,
+          fileName: response.file_name,
+          fileType: getFileType(response.file_name),
+          fileSize: resultDetails.file_size || '未知',
+          status: response.is_malicious ? 'malicious' : 'safe',
+          threatType: resultDetails.threat_details?.type || null,
+          confidence: resultDetails.threat_details?.confidence || null,
+          detectionMethod: resultDetails.scan_method || 'standard',
+          fileHash: resultDetails.file_hash || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        }],
+        usedPSI: response.privacy_enabled,
+        isEnterpriseReport: isEnterpriseUser,
+        enterpriseDetails: isEnterpriseUser ? {
+          batchId: `SCAN-${response.id}`,
+          departmentInfo: user.department || '安全部门',
+          threatCategories: {
+            [resultDetails.threat_details?.type || '未知']: response.is_malicious ? 1 : 0
+          },
+          riskLevel: resultDetails.threat_details?.severity || 'Low',
+          recommendedActions: [
+            '检查文件来源',
+            response.is_malicious ? '隔离并删除文件' : '继续保持良好的安全习惯',
+            '定期进行系统扫描'
+          ]
+        } : null
+      };
+      
+      setResults(formattedResults);
+      setError(null);
+    } catch (error) {
+      console.error('获取扫描详情失败:', error);
+      let errorMessage = '获取扫描详情失败';
+      
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = '会话已过期，请重新登录';
+        } else if (error.response.status === 404) {
+          errorMessage = '扫描记录不存在';
+        } else if (error.response.status === 403) {
+          errorMessage = '没有权限访问此记录';
+        } else {
+          errorMessage = `服务器错误 (${error.response.status})`;
+        }
+      } else if (error.request) {
+        errorMessage = '无法连接到服务器，请检查网络连接';
+      }
+      
+      setError(errorMessage);
+      
+      // 如果有扫描结果参数，则使用它生成一个模拟结果
+      if (scanResults) {
+        const mockResults = generateMockResults(scanResults, isEnterpriseUser);
+        setResults(mockResults);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * 页面初始化效果
    * 短暂延迟后将页面设置为已初始化状态，防止闪烁
    */
   useEffect(() => {
     const timer = setTimeout(() => {
       setInitializing(false);
+      
+      // 如果已登录且有scanId，从API获取数据
+      if (isLoggedIn && scanId) {
+        fetchScanDetails();
+      } else if (scanResults) {
+        // 否则使用传入的扫描结果生成模拟数据
+        const mockResults = generateMockResults(scanResults, isEnterpriseUser);
+        setResults(mockResults);
+        setLoading(false);
+      } else {
+        // 没有scanId和scanResults时显示错误
+        setError('未提供有效的扫描ID或结果');
+        setLoading(false);
+      }
     }, 100);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoggedIn, scanId, scanResults, isEnterpriseUser]);
 
   /**
    * 导航到登录页面
@@ -142,17 +282,6 @@ const ResultsPage = ({ scanResults }) => {
   const goToLogin = () => {
     navigate('/login', { state: { from: `/results/${scanId}` } });
   };
-
-  useEffect(() => {
-    // 模拟从API获取结果
-    // 在实际应用中，这将是一个API调用，使用scanId获取结果
-    setTimeout(() => {
-      // 生成模拟结果
-      const mockResults = generateMockResults(scanResults, isEnterpriseUser);
-      setResults(mockResults);
-      setLoading(false);
-    }, 1000);
-  }, [scanId, scanResults, isEnterpriseUser]);
   
   // 复制到剪贴板
   const copyToClipboard = (text) => {
@@ -168,7 +297,7 @@ const ResultsPage = ({ scanResults }) => {
   
   // 返回扫描页面
   const handleBack = () => {
-    navigate('/scan');
+    navigate('/history');
   };
   
   // 导出报告
@@ -372,21 +501,7 @@ const ResultsPage = ({ scanResults }) => {
             />
           )}
 
-          {/* 面包屑导航 */}
-          <Breadcrumb style={{ marginBottom: 16 }}>
-            <Breadcrumb.Item href="/">
-              <HomeOutlined />
-              <span>首页</span>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item href="/scan">
-              <FileSearchOutlined />
-              <span>扫描</span>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <SafetyOutlined />
-              <span>扫描结果</span>
-            </Breadcrumb.Item>
-          </Breadcrumb>
+          
           
           {/* 标题和导航按钮 */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
@@ -439,7 +554,7 @@ const ResultsPage = ({ scanResults }) => {
           
           {/* 状态卡片 - 基本信息始终显示 */}
           <StatusCard>
-            <Title level={3} style={{ color: results.maliciousFiles > 0 ? 'var(--color-error)' : 'var(--color-success)' }}>
+            <Title level={3} style={{ color: results.maliciousFiles > 0 ? 'var(--color-danger)' : 'var(--color-success)' }}>
               {results.maliciousFiles > 0 ? (
                 <><CloseCircleOutlined /> 检测到威胁</>
               ) : (
@@ -476,7 +591,7 @@ const ResultsPage = ({ scanResults }) => {
                     <Statistic 
                       title="受感染文件" 
                       value={results.maliciousFiles} 
-                      valueStyle={{ color: 'var(--color-error)' }}
+                      valueStyle={{ color: 'var(--color-danger)' }}
                       prefix={<CloseCircleOutlined />} 
                     />
                   </Col>

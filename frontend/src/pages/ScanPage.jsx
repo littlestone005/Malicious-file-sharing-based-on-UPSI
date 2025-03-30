@@ -164,6 +164,15 @@ const ScanPage = ({ setScanResults }) => {
       
       console.log('提交以下文件哈希进行检测:', fileHashes);
       
+      // 检查用户是否已登录
+      if (!isLoggedIn) {
+        message.error('请先登录后再进行扫描');
+        setLoginModalVisible(true);
+        setCurrentStep(0);
+        setIsLoading(false);
+        return;
+      }
+      
       // 调用后端API检测文件哈希
       const response = await scanAPI.checkFileHashes(fileHashes, results.usePSI);
       console.log('检测结果:', response);

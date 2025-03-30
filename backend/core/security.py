@@ -1,3 +1,10 @@
+"""
+安全模块，包含所有的安全相关的功能：
+- 密码哈希
+- JWT令牌
+- 访问控制
+"""
+
 from datetime import datetime, timedelta
 from typing import Any, Union, Optional
 from jose import jwt, JWTError
@@ -6,15 +13,19 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from backend.core.config import settings, ALGORITHM
+from backend.core.config import settings
 from backend.db.session import get_db
 from backend.models.user import User
+
+# 定义JWT算法
+JWT_ALGORITHM = "HS256"
+JWT_SECRET = settings.SECRET_KEY
 
 # 密码哈希管理
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 配置
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")
 
 # 验证密码
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -49,7 +60,7 @@ def create_access_token(subject: Union[str, Any], expires_delta: Optional[timede
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     
     return encoded_jwt
 
@@ -82,8 +93,8 @@ async def get_current_user(
         # 解码JWT令牌
         payload = jwt.decode(
             token, 
-            settings.SECRET_KEY, 
-            algorithms=[ALGORITHM]
+            JWT_SECRET, 
+            algorithms=[JWT_ALGORITHM]
         )
         user_id: str = payload.get("sub")
         if user_id is None:

@@ -88,6 +88,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Adding token to request:', config.url);
+    } else {
+      console.log('No token found for request:', config.url);
     }
     return config;
   },
@@ -195,6 +198,32 @@ export const scanAPI = {
       hashes: fileHashes,
       privacy_enabled: privacyEnabled
     });
+  },
+  
+  /**
+   * 上传恶意软件样本文件
+   * 
+   * @param {File} file - 文件对象
+   * @param {Object} metadata - 文件元数据，包括威胁类型、严重性、描述
+   * @returns {Promise<Object>} 服务器响应数据
+   */
+  uploadMalwareSample: async (file, metadata) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('threat_type', metadata.threatType);
+    formData.append('severity', metadata.severity);
+    
+    if (metadata.description) {
+      formData.append('description', metadata.description);
+    }
+    
+    const response = await api.post('/detection/malware-sample', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    return response;
   }
 };
 

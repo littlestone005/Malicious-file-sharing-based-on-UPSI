@@ -26,7 +26,8 @@ import {
   SettingOutlined, // 设置图标
   LogoutOutlined,  // 登出图标
   BankOutlined,    // 企业/银行图标
-  LoginOutlined    // 登录图标
+  LoginOutlined,   // 登录图标
+  BugOutlined      // 恶意软件/bug图标
 } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
@@ -201,6 +202,11 @@ const Header = () => {
       key: '/history',
       icon: <HistoryOutlined />,
       label: <Link to="/history">扫描历史</Link>,
+    },
+    {
+      key: '/upload-malware',
+      icon: <BugOutlined />,
+      label: <Link to="/upload-malware">恶意软件上传</Link>,
     },
     {
       key: '/about',

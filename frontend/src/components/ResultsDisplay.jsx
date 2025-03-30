@@ -79,9 +79,46 @@ const ResultsDisplay = ({ results }) => {
   const processedResults = results.hashes.map((file, index) => {
     // 标记每三个文件中的一个为恶意文件（仅用于演示）
     const isMalicious = index % 3 === 0;
+    
+    // 确定文件类型
+    let fileType = file.fileType;
+    if (!fileType && file.fileName) {
+      const extension = file.fileName.split('.').pop().toLowerCase();
+      const fileTypes = {
+        'pdf': 'PDF文档',
+        'doc': 'Word文档',
+        'docx': 'Word文档',
+        'xls': 'Excel表格',
+        'xlsx': 'Excel表格',
+        'ppt': 'PowerPoint演示文稿',
+        'pptx': 'PowerPoint演示文稿',
+        'txt': '文本文件',
+        'jpg': '图像文件',
+        'jpeg': '图像文件',
+        'png': '图像文件',
+        'gif': '图像文件',
+        'mp3': '音频文件',
+        'mp4': '视频文件',
+        'zip': '压缩文件',
+        'rar': '压缩文件',
+        'exe': '可执行文件',
+        'dll': '动态链接库',
+        'js': 'JavaScript文件',
+        'py': 'Python文件',
+        'html': 'HTML文件',
+        'css': 'CSS文件'
+      };
+      fileType = fileTypes[extension] || `${extension.toUpperCase()}文件`;
+    }
+    
+    // 确保哈希值存在
+    const hash = file.hash || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    
     return {
       ...file,
       key: index,
+      fileType: fileType,
+      hash: hash,
       status: isMalicious ? 'malicious' : 'safe',
       threatType: isMalicious ? ['Trojan', 'Spyware'][index % 2] : null,
       confidence: isMalicious ? Math.floor(Math.random() * 30) + 70 : 0, // 70-99% 置信度

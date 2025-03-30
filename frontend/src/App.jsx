@@ -29,6 +29,7 @@ import AboutPage from './pages/AboutPage'
 import UserSettingsPage from './pages/UserSettingsPage'
 import HistoryPage from './pages/HistoryPage'
 import TestConnection from './pages/TestConnection';
+import MalwareUploadPage from './pages/MalwareUploadPage';  // 新增恶意软件上传页面导入
 
 // 导入API服务
 import { authAPI } from './utils/api';
@@ -178,6 +179,7 @@ function App() {
               <Route path="/results/:scanId" element={<ResultsPage scanResults={scanResults} />} />
               <Route path="/test-connection" element={<TestConnection />} />       {/* 结果页面路由，接收scanId参数并传入scanResults */}
               <Route path="/about" element={<AboutPage />} />           {/* 关于页面路由 */}
+              <Route path="/upload-malware" element={<MalwareUploadPage />} />    {/* 恶意软件上传页面路由 */}
             </Routes>
             
           </ContentContainer>

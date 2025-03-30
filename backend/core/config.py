@@ -136,11 +136,13 @@ def ensure_directories():
         settings.UPLOAD_PATH,
         settings.SCAN_UPLOAD_PATH,
         settings.TEMP_UPLOAD_PATH,
-        settings.LOG_DIR
+        settings.LOG_DIR,
+        settings.UPLOAD_PATH / "malware_samples"  # 添加恶意软件样本目录
     ]
     
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
+        print(f"目录已创建: {directory}")  # 添加日志输出
 
 # 创建目录
 ensure_directories()

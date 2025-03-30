@@ -4,6 +4,10 @@ from datetime import datetime
 from backend.schemas.detection import DetectionRequest, DetectionResponse
 from backend.psi_wrapper import get_psi_wrapper
 from backend.core.config import settings
+from sqlalchemy.orm import Session
+from backend.models.known_threat import KnownThreat
+import os
+import logging
 
 async def detect_malware(hashes: list, use_psi: bool) -> DetectionResponse:
     psi = get_psi_wrapper()
@@ -62,3 +66,71 @@ async def analyze_hashes(request: DetectionRequest):
             status_code=500,
             detail=f"Detection error: {str(e)}"
         )
+
+async def add_malware_sample(
+    db: Session, 
+    file_path: str,
+    threat_type: str,
+    severity: str,
+    description: str = None
+) -> KnownThreat:
+    """
+    将文件添加为已知威胁样本
+    
+    Args:
+        db: 数据库会话
+        file_path: 文件路径
+        threat_type: 威胁类型
+        severity: 威胁级别 (low, medium, high, critical)
+        description: 威胁描述
+        
+    Returns:
+        创建的KnownThreat对象
+    """
+    from backend.utils.hashing import calculate_file_hash
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"尝试将文件添加为恶意软件样本: {file_path}")
+    
+    # 确保文件存在
+    if not os.path.exists(file_path):
+        error_msg = f"文件不存在: {file_path}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    try:
+        # 计算文件哈希值
+        logger.info(f"计算文件哈希值: {file_path}")
+        file_hash = calculate_file_hash(file_path)
+        logger.info(f"文件哈希值: {file_hash}")
+        
+        # 检查哈希值是否已存在
+        logger.info(f"检查哈希值是否已存在: {file_hash}")
+        existing = db.query(KnownThreat).filter(KnownThreat.hash == file_hash).first()
+        if existing:
+            logger.info(f"哈希值已存在: {file_hash}, 返回现有记录")
+            return existing
+        
+        # 创建新的威胁记录
+        logger.info(f"创建新的威胁记录: {threat_type}, {severity}")
+        now = datetime.utcnow()
+        threat = KnownThreat(
+            hash=file_hash,
+            threat_type=threat_type,
+            severity=severity,
+            first_seen=now,
+            last_seen=now,
+            description=description
+        )
+        
+        db.add(threat)
+        db.commit()
+        db.refresh(threat)
+        logger.info(f"威胁记录已创建: ID={threat.id}, 哈希值={threat.hash}")
+        
+        return threat
+    except Exception as e:
+        db.rollback()
+        logger.error(f"添加恶意软件样本失败: {str(e)}")
+        raise

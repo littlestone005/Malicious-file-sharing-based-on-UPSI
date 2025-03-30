@@ -9,48 +9,50 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-async def calculate_file_hash_from_upload(upload_file: UploadFile) -> str:
-    """计算上传文件的哈希值
+async def calculate_upload_file_hash(file: UploadFile) -> str:
+    """
+    计算上传文件的SHA-256哈希值
     
-    将上传文件的内容读取并计算SHA-256哈希
+    将上传的文件内容读取到内存中并计算其哈希值
+    对于大文件，应改进此函数以分块读取
     
     Args:
-        upload_file: FastAPI上传文件对象
+        file: FastAPI上传文件对象
         
     Returns:
-        str: 文件的SHA-256哈希值
+        文件的SHA-256哈希值（十六进制字符串）
     """
-    try:
-        sha256 = hashlib.sha256()
-        contents = await upload_file.read()
-        sha256.update(contents)
-        # 重置文件位置，以便后续操作可以重新读取
-        await upload_file.seek(0)
-        return sha256.hexdigest()
-    except Exception as e:
-        logger.error(f'上传文件哈希计算失败: {str(e)}')
-        raise
+    content = await file.read()
+    # 将文件指针重置到开始位置，以便后续操作可以再次读取
+    await file.seek(0)
+    
+    # 计算SHA-256哈希值
+    file_hash = hashlib.sha256(content).hexdigest()
+    return file_hash
 
 def calculate_file_hash(file_path: str) -> str:
-    """计算文件哈希值
+    """
+    计算文件的SHA-256哈希值
     
-    读取文件内容并计算SHA-256哈希
+    读取文件并计算其哈希值，适用于本地文件
     
     Args:
         file_path: 文件路径
         
     Returns:
-        str: 文件的SHA-256哈希值
+        文件的SHA-256哈希值（十六进制字符串）
     """
-    try:
-        with open(file_path, 'rb') as f:
-            sha256 = hashlib.sha256()
-            for chunk in iter(lambda: f.read(4096), b''):
-                sha256.update(chunk)
-            return sha256.hexdigest()
-    except IOError as e:
-        logger.error(f'文件哈希计算失败: {str(e)}')
-        raise
+    # 创建哈希对象
+    hasher = hashlib.sha256()
+    
+    # 分块读取文件并更新哈希值
+    with open(file_path, 'rb') as f:
+        # 每次读取1MB
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            hasher.update(chunk)
+    
+    # 返回十六进制哈希值
+    return hasher.hexdigest()
 
 def chunked_hash(file_path: str, chunk_size: int = 4096) -> List[str]:
     """文件分块哈希计算

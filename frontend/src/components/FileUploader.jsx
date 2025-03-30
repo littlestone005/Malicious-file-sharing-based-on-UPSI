@@ -225,6 +225,9 @@ const FileUploader = ({
     // 如果未登录，提示用户登录
     if (isDisabled) {
       message.warning('请先登录以使用文件扫描功能');
+      if (onLoginClick) {
+        onLoginClick();
+      }
       return;
     }
 
@@ -260,17 +263,12 @@ const FileUploader = ({
         })
       );
       
-      // 模拟API调用延迟
-      setTimeout(() => {
-        // 调用回调函数，传递处理结果
-        onFilesProcessed({
-          hashes: fileHashes,
-          usePSI,
-          isEnterpriseUpload: isEnterpriseUser
-        });
-        // 关闭加载状态
-        setIsLoading(false);
-      }, 2000);
+      // 调用回调函数，传递处理结果
+      onFilesProcessed({
+        hashes: fileHashes,
+        usePSI,
+        isEnterpriseUpload: isEnterpriseUser
+      });
       
     } catch (error) {
       // 处理错误

@@ -25,7 +25,8 @@ import {
   LockOutlined,
   FileProtectOutlined,
   WarningOutlined,
-  CopyOutlined
+  CopyOutlined,
+  BankOutlined
 } from '@ant-design/icons';
 
 // 从Typography组件中解构出需要的子组件
@@ -132,31 +133,31 @@ const PrivacyInfo = styled.div`
  * 详细扫描结果组件
  * 
  * @param {Object} props - 组件属性
- * @param {Object} props.scanResults - 扫描结果数据
- * @param {string} props.fileName - 文件名称
+ * @param {Object} props.results - 扫描结果数据
+ * @param {boolean} props.isEnterpriseUser - 是否为企业用户
  * @returns {JSX.Element} 详细扫描结果组件
  */
-const DetailedResults = ({ scanResults, fileName }) => {
+const DetailedResults = ({ results, isEnterpriseUser }) => {
   // 当前活动标签页状态
   const [activeTab, setActiveTab] = useState('summary');
   
-  // 示例数据 - 实际应用中应该从props接收
-  const results = scanResults || {
-    status: 'clean', // 'clean', 'infected', 'suspicious'
-    fileName: fileName || 'example.exe',
-    fileSize: '2.4 MB',
-    scanTime: '2023-11-15 14:30:22',
-    threatName: null,
-    threatLevel: 'none', // 'none', 'low', 'medium', 'high', 'critical'
-    privacyProtected: true,
-    hashMatches: 0,
-    totalHashes: 1000000,
-    scanDuration: '1.2 秒',
-    detectionMethod: 'PSI协议',
-    fileType: 'Windows可执行文件',
-    fileHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    recommendations: [],
-  };
+  // 确保results数据存在
+  if (!results || !results.fileResults || results.fileResults.length === 0) {
+    return (
+      <Card>
+        <Text>没有可用的扫描结果详情</Text>
+      </Card>
+    );
+  }
+  
+  // 获取第一个文件的结果，用于单文件扫描详情
+  const fileResult = results.fileResults[0];
+  
+  // 确定扫描状态
+  let status = 'clean';
+  if (fileResult.status === 'malicious') {
+    status = fileResult.threatType ? 'infected' : 'suspicious';
+  }
   
   /**
    * 根据扫描状态获取对应的颜色、图标和文本
@@ -194,7 +195,19 @@ const DetailedResults = ({ scanResults, fileName }) => {
   };
   
   // 获取当前扫描状态的信息
-  const statusInfo = getStatusInfo(results.status);
+  const statusInfo = getStatusInfo(status);
+  
+  // 获取威胁等级
+  const getThreatLevel = () => {
+    if (status === 'clean') return 'none';
+    if (results.enterpriseDetails?.riskLevel) {
+      const riskLevel = results.enterpriseDetails.riskLevel.toLowerCase();
+      return ['low', 'medium', 'high', 'critical'].includes(riskLevel) ? riskLevel : 'medium';
+    }
+    return status === 'infected' ? 'high' : 'medium';
+  };
+  
+  const threatLevel = getThreatLevel();
   
   /**
    * 威胁等级对应的颜色映射
@@ -233,6 +246,53 @@ const DetailedResults = ({ scanResults, fileName }) => {
     );
   };
   
+  // 构建文件详情数据
+  const fileDetailsData = [
+    { key: '1', property: '文件名', value: fileResult.fileName },
+    { key: '2', property: '文件大小', value: typeof fileResult.fileSize === 'number' ? 
+      `${(fileResult.fileSize / (1024 * 1024)).toFixed(2)} MB` : fileResult.fileSize },
+    { key: '3', property: '文件类型', value: fileResult.fileType || getFileTypeFromName(fileResult.fileName) },
+    { key: '4', property: '扫描时间', value: new Date(results.timestamp).toLocaleString() },
+    { key: '5', property: '检测方法', value: fileResult.detectionMethod || '标准扫描' },
+    { key: '6', property: 'SHA-256哈希值', value: fileResult.fileHash || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+  ];
+  
+  /**
+   * 从文件名获取文件类型
+   * 
+   * @param {string} fileName - 文件名
+   * @returns {string} 文件类型描述
+   */
+  function getFileTypeFromName(fileName) {
+    const extension = fileName.split('.').pop().toLowerCase();
+    const fileTypes = {
+      'pdf': 'PDF文档',
+      'doc': 'Word文档',
+      'docx': 'Word文档',
+      'xls': 'Excel表格',
+      'xlsx': 'Excel表格',
+      'ppt': 'PowerPoint演示文稿',
+      'pptx': 'PowerPoint演示文稿',
+      'txt': '文本文件',
+      'jpg': '图像文件',
+      'jpeg': '图像文件',
+      'png': '图像文件',
+      'gif': '图像文件',
+      'mp3': '音频文件',
+      'mp4': '视频文件',
+      'zip': '压缩文件',
+      'rar': '压缩文件',
+      'exe': '可执行文件',
+      'dll': '动态链接库',
+      'js': 'JavaScript文件',
+      'py': 'Python文件',
+      'html': 'HTML文件',
+      'css': 'CSS文件'
+    };
+    
+    return fileTypes[extension] || `${extension.toUpperCase()}文件`;
+  }
+  
   /**
    * 文件详情表格列配置
    */
@@ -253,7 +313,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
           return (
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <Text code ellipsis style={{ maxWidth: '300px' }}>{text}</Text>
-              {text && text !== '未计算哈希值' && (
+              {text && text !== "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" && (
                 <Tooltip title="复制哈希值">
                   <Button 
                     type="text" 
@@ -273,30 +333,23 @@ const DetailedResults = ({ scanResults, fileName }) => {
   ];
   
   /**
-   * 文件详情表格数据
-   */
-  const fileDetailsData = [
-    { key: '1', property: '文件名', value: results.fileName },
-    { key: '2', property: '文件大小', value: results.fileSize },
-    { key: '3', property: '文件类型', value: results.fileType },
-    { key: '4', property: '扫描时间', value: results.scanTime },
-    { key: '5', property: '扫描持续时间', value: results.scanDuration },
-    { key: '6', property: '检测方法', value: results.detectionMethod },
-    { key: '7', property: 'SHA-256哈希值', value: results.fileHash || '未计算哈希值' },
-  ];
-  
-  /**
    * 根据扫描状态获取建议操作列表
    * 
    * @returns {Array} 建议操作文本数组
    */
   const getRecommendations = () => {
-    if (results.status === 'clean') {
+    // 如果有企业版的推荐操作，使用它们
+    if (results.enterpriseDetails?.recommendedActions?.length > 0) {
+      return results.enterpriseDetails.recommendedActions;
+    }
+    
+    // 否则根据状态提供默认建议
+    if (status === 'clean') {
       return [
         '您的文件是安全的，无需采取任何操作。',
         '继续保持良好的安全习惯，定期扫描您的文件。'
       ];
-    } else if (results.status === 'infected') {
+    } else if (status === 'infected') {
       return [
         '立即隔离或删除受感染的文件。',
         '运行完整的系统扫描以检查其他可能的感染。',
@@ -330,18 +383,23 @@ const DetailedResults = ({ scanResults, fileName }) => {
         <ResultSummary>
           {/* 威胁等级项 */}
           <SummaryItem>
-            <IconWrapper color={threatLevelColors[results.threatLevel]}>
+            <IconWrapper color={threatLevelColors[threatLevel]}>
               <SafetyOutlined />
             </IconWrapper>
             <Text strong>威胁等级</Text>
             <Progress 
-              percent={getThreatProgress(results.threatLevel)} 
+              percent={getThreatProgress(threatLevel)} 
               showInfo={false} 
-              strokeColor={threatLevelColors[results.threatLevel]}
+              strokeColor={threatLevelColors[threatLevel]}
               size="small"
               style={{ width: '80%', marginTop: '8px' }}
             />
-            <Text>{results.threatLevel === 'none' ? '无威胁' : results.threatLevel}</Text>
+            <Text style={{ textTransform: 'capitalize' }}>
+              {threatLevel === 'none' ? '无威胁' : 
+                threatLevel === 'low' ? '低' :
+                threatLevel === 'medium' ? '中' :
+                threatLevel === 'high' ? '高' : '严重'}
+            </Text>
           </SummaryItem>
           
           {/* 隐私保护项 */}
@@ -350,29 +408,55 @@ const DetailedResults = ({ scanResults, fileName }) => {
               <LockOutlined />
             </IconWrapper>
             <Text strong>隐私保护</Text>
-            <Text>{results.privacyProtected ? '已启用' : '未启用'}</Text>
+            <Text>{results.usedPSI ? '已启用' : '未启用'}</Text>
           </SummaryItem>
           
           {/* 检测结果项 */}
           <SummaryItem>
-            <IconWrapper color={results.status === 'clean' ? '#52c41a' : '#f5222d'}>
+            <IconWrapper color={status === 'clean' ? '#52c41a' : '#f5222d'}>
               <FileProtectOutlined />
             </IconWrapper>
             <Text strong>检测结果</Text>
-            <Text>{results.threatName || '未检测到威胁'}</Text>
+            <Text>{fileResult.threatType || (status !== 'clean' ? '未知威胁' : '未检测到威胁')}</Text>
           </SummaryItem>
         </ResultSummary>
         
         {/* 隐私保护信息区域 */}
-        <PrivacyInfo>
-          <Text strong><InfoCircleOutlined /> 隐私保护信息</Text>
-          <Paragraph style={{ marginTop: '8px' }}>
-            使用PSI协议进行检测，您的文件内容和哈希值未被直接暴露。在{results.totalHashes.toLocaleString()}个已知恶意软件哈希中，
-            {results.hashMatches > 0 
-              ? `发现${results.hashMatches}个匹配项。` 
-              : '未发现匹配项。'}
-          </Paragraph>
-        </PrivacyInfo>
+        {results.usedPSI && (
+          <PrivacyInfo>
+            <Text strong><InfoCircleOutlined /> 隐私保护信息</Text>
+            <Paragraph style={{ marginTop: '8px' }}>
+              使用PSI协议进行检测，您的文件内容和哈希值未被直接暴露。
+              {status !== 'clean' 
+                ? ' 系统检测到文件可能存在风险，但您的隐私得到了保护。' 
+                : ' 您的文件安全且隐私得到了保护。'}
+            </Paragraph>
+          </PrivacyInfo>
+        )}
+        
+        {/* 企业版详情 - 仅对企业用户显示 */}
+        {isEnterpriseUser && results.enterpriseDetails && (
+          <PrivacyInfo style={{ backgroundColor: 'rgba(250, 173, 20, 0.1)', borderColor: '#faad14' }}>
+            <Text strong><BankOutlined /> 企业安全分析</Text>
+            <Paragraph style={{ marginTop: '8px' }}>
+              批次ID: {results.enterpriseDetails.batchId} | 部门: {results.enterpriseDetails.departmentInfo || '安全部门'}
+              {Object.keys(results.enterpriseDetails.threatCategories || {}).length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <Text strong>威胁分类:</Text>
+                  <div>
+                    {Object.entries(results.enterpriseDetails.threatCategories).map(([category, count]) => (
+                      count > 0 && (
+                        <Tag color="orange" key={category} style={{ margin: '2px' }}>
+                          {category}: {count}
+                        </Tag>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Paragraph>
+          </PrivacyInfo>
+        )}
         
         {/* 可折叠面板：文件详情和建议操作 */}
         <Collapse defaultActiveKey={['1']}>
@@ -403,7 +487,7 @@ const DetailedResults = ({ scanResults, fileName }) => {
           <Button type="default">
             导出报告
           </Button>
-          <Button type="primary">
+          <Button type="primary" onClick={() => window.history.back()}>
             返回
           </Button>
         </div>

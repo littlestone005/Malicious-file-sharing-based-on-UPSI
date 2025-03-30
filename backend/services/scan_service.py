@@ -10,6 +10,7 @@ from backend.models.known_threat import KnownThreat
 from backend.utils.hashing import calculate_file_hash
 from backend.core.config import settings
 from backend.psi_wrapper import get_psi_wrapper
+from backend.models.user import User
 
 async def save_upload_file(upload_file: UploadFile) -> str:
     """
@@ -40,8 +41,15 @@ async def create_scan_record(
     """
     创建扫描记录
     """
+    # 获取用户名
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
     record = ScanRecord(
         user_id=user_id,
+        user_name=user.username,
         file_name=file_name,
         file_hash=file_hash,
         file_size=file_size,

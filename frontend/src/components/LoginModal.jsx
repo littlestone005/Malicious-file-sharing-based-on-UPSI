@@ -64,20 +64,30 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
       setLoading(true);
       const response = await authAPI.login(values.username, values.password);
       
+      console.log('Login response detailed:', response);
+      
       // 保存token和用户信息
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('user', JSON.stringify({
-        id: response.user_id,
-        username: response.username,
+      const token = response.access_token || response.data?.access_token;
+      if (!token) {
+        throw new Error('Login response is missing access token');
+      }
+      
+      localStorage.setItem('token', token);
+      
+      const userData = {
+        id: response.user_id || response.data?.user_id,
+        username: values.username,
         userType: userType
-      }));
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userData));
       
       message.success('登录成功！');
-      onLogin({
-        id: response.user_id,
-        username: response.username,
-        userType: userType
-      });
+      
+      if (typeof onLogin === 'function') {
+        onLogin(userData);
+      }
+      
       onClose();
     } catch (error) {
       console.error('Login error:', error);  // 添加错误日志

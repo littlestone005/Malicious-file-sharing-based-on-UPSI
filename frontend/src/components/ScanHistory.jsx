@@ -317,6 +317,8 @@ const ScanHistory = () => {
    * @returns {string} 文件类型描述
    */
   const getFileType = (fileName) => {
+    if (!fileName) return '未知文件';
+    
     const extension = fileName.split('.').pop().toLowerCase();
     const fileTypes = {
       'pdf': 'PDF文档',
@@ -620,14 +622,13 @@ const ScanHistory = () => {
   };
   
   /**
-   * 查看记录详情
+   * 处理查看详情按钮点击，跳转到详情页面
    * 
-   * @param {Object} record - 记录对象
+   * @param {Object} record - 选中的记录
    */
   const handleViewDetails = (record) => {
-    // 实际应用中应该跳转到详情页或显示详情弹窗
-    console.log('查看详情:', record);
-    message.info(`查看文件 ${record.fileName} 的详细信息`);
+    // 跳转到详情页面
+    window.location.href = `/results/${record.id}`;
   };
   
   /**
@@ -639,6 +640,19 @@ const ScanHistory = () => {
     // 实际应用中应该调用API导出记录
     console.log('导出记录:', selectedRowKeys);
     message.success(`已导出 ${selectedRowKeys.length} 条记录`);
+  };
+  
+  /**
+   * 处理分页变化
+   * 
+   * @param {number} page - 当前页码
+   * @param {number} pageSize - 每页条数
+   */
+  const handleTableChange = (pagination) => {
+    setPagination({
+      ...pagination,
+      current: pagination.current
+    });
   };
   
   return (
@@ -739,10 +753,7 @@ const ScanHistory = () => {
               />
             )
           }}
-          onChange={(pagination) => {
-            setPagination(pagination);
-            fetchScanHistory();
-          }}
+          onChange={handleTableChange}
         />
       </HistoryCard>
     </div>
