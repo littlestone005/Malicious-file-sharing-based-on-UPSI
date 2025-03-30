@@ -67,16 +67,24 @@ const LoginModal = ({ visible, onClose, onLogin }) => {
       console.log('Login response detailed:', response);
       
       // 保存token和用户信息
-      const token = response.access_token || response.data?.access_token;
+      const token = response.access_token;
       if (!token) {
+        console.error('Missing token in response:', response);
         throw new Error('Login response is missing access token');
       }
       
       localStorage.setItem('token', token);
       
+      // 保存更多用户信息到localStorage，便于离线访问
+      localStorage.setItem('username', values.username);
+      if (response.name) localStorage.setItem('name', response.name);
+      if (response.email) localStorage.setItem('email', response.email);
+      
       const userData = {
-        id: response.user_id || response.data?.user_id,
+        id: response.user_id,
         username: values.username,
+        name: response.name,
+        email: response.email,
         userType: userType
       };
       

@@ -246,26 +246,19 @@ async def get_scan_detail(
         "result_details": result
     }
 
-@router.get("/statistics/", response_model=None)
+@router.get("/statistics/", response_model=ScanStatisticsResponse)
 async def get_user_scan_statistics(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    获取用户的扫描统计数据
-    
-    返回总扫描数、安全文件数、威胁文件数、可疑文件数和隐私保护使用次数
+    获取用户扫描统计数据
     """
     try:
-        statistics = await get_scan_statistics(db, current_user.id)
+        statistics = await get_scan_statistics(db, user_id=current_user.id)
         return statistics
     except Exception as e:
-        logger.error(f"获取扫描统计数据失败: {str(e)}")
-        # 发生错误时返回空数据
-        return {
-            "totalScans": -1,
-            "cleanFiles": -1,
-            "infectedFiles": -1,
-            "suspiciousFiles": -1,
-            "privacyProtected": -1
-        } 
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取统计数据失败: {str(e)}"
+        ) 

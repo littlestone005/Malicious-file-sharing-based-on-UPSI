@@ -27,7 +27,8 @@ import {
   LogoutOutlined,  // 登出图标
   BankOutlined,    // 企业/银行图标
   LoginOutlined,   // 登录图标
-  BugOutlined      // 恶意软件/bug图标
+  BugOutlined,      // 恶意软件/bug图标
+  DatabaseOutlined  // 数据库图标
 } from '@ant-design/icons';
 // 导入样式组件库
 import styled from 'styled-components';
@@ -204,19 +205,24 @@ const Header = () => {
       label: <Link to="/history">扫描历史</Link>,
     },
     {
-      key: '/upload-malware',
-      icon: <BugOutlined />,
-      label: <Link to="/upload-malware">恶意软件上传</Link>,
-    },
-    {
       key: '/about',
       icon: <InfoCircleOutlined />,
       label: <Link to="/about">关于我们</Link>,
     },
     {
+      key: '/upload-malware',
+      icon: <BugOutlined />,
+      label: <Link to="/upload-malware">恶意软件上传</Link>,
+    },
+    {
       key: '/test-connection',
       icon: <SettingOutlined />,
       label: <Link to="/test-connection">测试连接</Link>,
+    },
+    {
+      key: '/database-view',
+      icon: <DatabaseOutlined />,
+      label: <Link to="/database-view">数据库查看</Link>,
     },
   ];
 

@@ -200,14 +200,6 @@ const ScanHistory = () => {
           privacyEnabled = false;
         }
         
-        console.log('处理后记录:', {
-          id: item.id,
-          is_malicious: isMalicious,
-          status: status,
-          privacy_enabled: item.privacy_enabled,
-          privacyEnabled: privacyEnabled
-        }); // 调试日志
-        
         return {
           key: item.id.toString(),
           id: item.id,
@@ -234,19 +226,21 @@ const ScanHistory = () => {
       // 根据错误类型提供更具体的提示
       if (error.response) {
         if (error.response.status === 401) {
-          errorMessage = '会话已过期，请重新登录';
+          errorMessage = '您的会话已过期，请重新登录';
+        } else if (error.response.status === 404) {
+          errorMessage = '无法找到扫描历史记录路径，请检查API配置';
         } else if (error.response.status === 422) {
           errorMessage = '数据格式错误，请联系管理员';
         } else if (error.response.status >= 500) {
           errorMessage = '服务器错误，请稍后再试';
         }
       } else if (error.request) {
-        errorMessage = '无法连接到服务器，请检查网络连接';
+        errorMessage = '无法连接到服务器，请检查您的网络连接';
       }
       
       message.error(errorMessage);
       
-      // 设置示例数据
+      // 设置示例数据，确保用户始终能看到内容
       const exampleData = [
         {
           key: '1',

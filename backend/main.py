@@ -41,13 +41,15 @@ from backend.routers.auth import router as auth_router
 from backend.routers.user import router as user_router
 from backend.routers.scan import router as scan_router
 from backend.routers.test import router as test_router
+from backend.routers.database import router as database_router
 
 # 注册路由
-app.include_router(detection_router)
-app.include_router(auth_router)
-app.include_router(user_router)
-app.include_router(scan_router)
+app.include_router(detection_router)  # detection_router已经包含前缀 /api/v1/detection
+app.include_router(auth_router)  # auth_router已经包含前缀 /api/v1/auth
+app.include_router(user_router)  # user_router已经包含前缀 /api/v1/users
+app.include_router(scan_router)  # scan_router已经包含前缀 /api/v1/scans
 app.include_router(test_router, prefix="/api/v1", tags=["test"])
+app.include_router(database_router, prefix="/api/v1")
 
 # 根路由
 @app.get("/")
